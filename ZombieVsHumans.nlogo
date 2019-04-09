@@ -96,6 +96,7 @@ to year-counter ;MNM
    set age-counter 0
    ask humans [
      set age (age + 1)
+      if age >= (maximum-age + (random 10) - (random 10)) [ die ]
     ]
   ]
 end
@@ -418,6 +419,21 @@ reproduction-age
 0
 100
 25.0
+1
+1
+NIL
+HORIZONTAL
+
+SLIDER
+795
+174
+967
+207
+maximum-age
+maximum-age
+0
+100
+86.0
 1
 1
 NIL
