@@ -11,7 +11,7 @@
 
 
 ; ************* GLOBAL VARIABLES *****************
-;globals []
+globals [age-counter]
 
 ; *****************************
 
@@ -20,12 +20,13 @@
 breed [ zombies zombie ]  ;
 breed [ humans human ]
 
+
 ; ****************************
 
 ; ************* AGENT-SPECIFIC VARIABLES *********
 turtles-own []
-zombies-own []
-humans-own []
+zombies-own [energy]
+humans-own [latest-birth age]
 ; ***************************
 
 
@@ -47,6 +48,9 @@ to go
   live-humans
   live-zombies
   tick
+
+  if count humans > 200 [stop]
+  if count zombies > 200 [stop]
 end
 ; **************************
 
@@ -54,11 +58,22 @@ end
 ; ****************** HUMAN AGENTS PART **************
 ;
 ; --setup human agents --------------------------------
-to setup-humans ; <3-digit initial of programmer>
-  create-humans initial-number-humans
+to setup-humans ;MNM
+  set age-counter 0
+  create-humans (initial-number-humans / 2)
   [
     set shape "person"
-    set color black
+    set color blue
+    set age random setup-age
+    set size 2  ; easier to see
+    setxy random-xcor random-ycor
+  ]
+  create-humans (initial-number-humans / 2)
+  [
+    set shape "person"
+    set color pink
+    set age random setup-age
+    set latest-birth 0
     set size 2  ; easier to see
     setxy random-xcor random-ycor
   ]
@@ -68,11 +83,63 @@ end
 ; --human agents main function ----------------------
 to live-humans
 ; <3-digit initial of programmer for each subfunction of the agent>
+  year-counter
+  move-humans
+  reproduce-humans
 end
 ; end human agents main function --------------------
 
 ; --human agents procedures/reporters ----------------
+to year-counter ;MNM
+  set age-counter (age-counter + 1)
+  if (age-counter = ticks-per-year) [
+   set age-counter 0
+   ask humans [
+     set age (age + 1)
+    ]
+  ]
+end
+
 ; <3-digit initial of programmer for each procedure>
+to reproduce-humans ;MNM
+  ask humans with [color = pink and age >= reproduction-age and age >= latest-birth] [
+    if any? humans-here with [color = blue] [
+      set latest-birth age
+      hatch random 3 [
+        ifelse random 2 = 0 [set color pink] [set color blue]
+        set age 0
+        right random 360
+        forward 1
+      ]
+    ]
+  ]
+end
+
+
+
+to move-humans ;MNM
+  ask humans [
+    let zomb min-one-of zombies in-radius 8 [distance myself]
+    ifelse zomb != nobody [
+      ;run away from zombie
+      set heading towards zomb
+      right 180
+      forward 1
+    ] [
+      let person min-one-of other humans in-radius 8 [distance myself]
+      if person != nobody [
+        ifelse [distance myself] of person > 3 [
+          set heading towards person
+          forward 1
+        ] [
+          right random 30
+          left random 30
+          forward 1
+        ]
+      ]
+     ]
+    ]
+end
 ; end human agents procedures/reporters -------------
 
 ; **************************
@@ -80,8 +147,13 @@ end
 ; #################################################################################################################
 
 ; ****************** ZOMBIE AGENTS PART **************
+
 ;
-; --setup zombie agents --------------------------------
+; --zombie agents procedures/reporters ----------------
+; <3-digit initial of programmer for each procedure>
+; end zombie agents procedures/reporters -------------
+
+; ************************
 to setup-zombies
   create-zombies initial-number-zombies
   [
@@ -89,6 +161,7 @@ to setup-zombies
     set color red
     set size 3  ; easier to see
     setxy random-xcor random-ycor
+    set energy random (2 * zombies-energy-gain)
   ]
 end
 ; end setup zombie agents ----------------------------
@@ -96,11 +169,45 @@ end
 ; --zombie agents main function ----------------------
 to live-zombies
 ; <3-digit initial of programmer for each subfunction of the agent>
+  ;TEMP TESTFUNCTIONS
+  move-zombies ; MNM
+  check-death-zombies ;MNM
+  eat-humans
 end
 ; end zombie agents main function --------------------
 
 ; --zombie agents procedures/reporters ----------------
 ; <3-digit initial of programmer for each procedure>
+to move-zombies ;temp. testfunction MNM
+  ask zombies [
+    set energy energy - 1
+    right random 50
+    left random 50
+    forward 1
+  ]
+end
+
+to check-death-zombies
+  ask zombies [
+    if energy <= 0 [die]
+  ]
+end
+
+to eat-humans
+  ask zombies [
+    let prey one-of humans-here
+    if prey != nobody [
+      ask prey [die]
+      hatch 1 [
+        set shape "zombie"
+        set color red
+        set size 3  ; easier to see
+        set energy random (2 * zombies-energy-gain)
+      ]
+      set energy energy + zombies-energy-gain
+    ]
+  ]
+end
 ; end zombie agents procedures/reporters -------------
 
 ; **************************
@@ -111,8 +218,7 @@ end
 ; |-------|--------------------------------------------
 ; |3-digit|  Name
 ; |-------|--------------------------------------------
-; |<abc>  | <Anna Bedercrest>
-; |       |
+; | <MNM> | Marcus Nordström
 ; |       |
 ; |       |
 ; |----------------------------------------------------
@@ -130,7 +236,6 @@ end
 ; -----------------------------------------------------
 
 ; #################################################################################################################
-
 @#$#@#$#@
 GRAPHICS-WINDOW
 217
@@ -202,7 +307,7 @@ initial-number-humans
 initial-number-humans
 0
 50
-0.0
+7.0
 1
 1
 NIL
@@ -217,7 +322,102 @@ initial-number-zombies
 initial-number-zombies
 1
 50
+7.0
+1
+1
+NIL
+HORIZONTAL
+
+SLIDER
+14
+318
+186
+351
+zombies-energy-gain
+zombies-energy-gain
+0
+100
+75.0
+1
+1
+NIL
+HORIZONTAL
+
+PLOT
+2
+395
+202
+545
+plot 1
+NIL
+NIL
 0.0
+10.0
+0.0
+10.0
+true
+false
+"" ""
+PENS
+"Zombies" 1.0 0 -10899396 true "" "plot count zombies"
+"Women" 1.0 0 -2064490 true "" "plot count humans with [color = pink]"
+"Men" 1.0 0 -13345367 true "" "plot count humans with [color = blue]"
+
+SLIDER
+793
+10
+965
+43
+reproduce-delay
+reproduce-delay
+0
+500
+250.0
+1
+1
+NIL
+HORIZONTAL
+
+SLIDER
+794
+52
+966
+85
+setup-age
+setup-age
+0
+100
+50.0
+1
+1
+NIL
+HORIZONTAL
+
+SLIDER
+794
+92
+966
+125
+ticks-per-year
+ticks-per-year
+0
+100
+50.0
+1
+1
+NIL
+HORIZONTAL
+
+SLIDER
+795
+134
+967
+167
+reproduction-age
+reproduction-age
+0
+100
+25.0
 1
 1
 NIL
@@ -566,7 +766,7 @@ Polygon -7500403 true true 270 75 225 30 30 225 75 270
 Polygon -7500403 true true 30 75 75 30 270 225 225 270
 
 zombie
-true
+false
 3
 Circle -10899396 false false 120 45 60
 Line -7500403 false 150 105 150 210
