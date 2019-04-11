@@ -82,7 +82,7 @@ end
 
 ; --human agents main function ----------------------
 to live-humans
-; <3-digit initial of programmer for each subfunction of the agent>
+  ; <3-digit initial of programmer for each subfunction of the agent>
   year-counter
   move-humans
   reproduce-humans
@@ -93,11 +93,11 @@ end
 to year-counter ;MNM
   set age-counter (age-counter + 1)
   if (age-counter = ticks-per-year) [
-   set age-counter 0
-   ask humans [
-     set age (age + 1)
-      if age >= (maximum-age + (random 10) - (random 10)) [ die ]
-    ]
+    set age-counter 0
+    ;   ask humans [
+    ;     set age (age + 1)
+    ;      if age >= (maximum-age + (random 10) - (random 10)) [ die ]
+    ;    ]
   ]
 end
 
@@ -116,12 +116,16 @@ to reproduce-humans ;MNM
   ]
 end
 
-
+to-report family[female male];TO BE IMPLEMENTED (FAMILY TREE)
+  show who
+  report 1
+  report 0
+end
 
 to move-humans ;MNM
   ask humans [
 
-    let zomb min-one-of zombies in-radius 8 [distance myself]
+    let zomb min-one-of zombies in-radius vision-radius [distance myself]
     ifelse zomb != nobody [
       ;run away from zombie
       set heading towards zomb
@@ -129,80 +133,175 @@ to move-humans ;MNM
       right 160 + random 20
       forward 1
     ] [
-      let person min-one-of other humans in-radius 8 [distance myself]
+      let person min-one-of other humans in-radius vision-radius [distance myself]
       ifelse person != nobody [
         if [distance myself] of person > 3 [
           set heading towards person
+          right random 5
+          left random 5
           forward 1
         ]
       ] [
-          right random 30
-          left random 30
-          forward 1
-        ]
-     ]
+        right random 30
+        left random 30
+        forward 1
+      ]
+      ;right random 30
+      ;left random 30
+      ;forward 1
     ]
+  ]
 end
 ; end human agents procedures/reporters -------------
 
 ; **************************
 
 ; #################################################################################################################
-
-; ****************** ZOMBIE AGENTS PART **************
-
+; **************** ZOMBIE AGENTS PART ************
 ;
-; --zombie agents procedures/reporters ----------------
-; <3-digit initial of programmer for each procedure>
-; end zombie agents procedures/reporters -------------
-; ************************
+; --setup zombie agents --------------------------------
 to setup-zombies
-  create-zombies initial-number-zombies
-  [
+  create-zombies initial-number-zombies [
     set shape "zombie"
     set color red
     set size 3  ; easier to see
+    set energy energy-start-zombies
     setxy random-xcor random-ycor
-    set energy random (2 * zombies-energy-gain)
   ]
 end
+
+;; turtle 1 creates links with all other turtles
+;; the link between the turtle and itself is ignored
+
 ; end setup zombie agents ----------------------------
+
+to move-zombies[State]
+  ;;State random tactics
+  if State = "Step2" [
+    ask zombies [
+      ;;Random heading and move forward based on energy
+
+      if energy > 0 [
+        right random 45
+        left random 45
+        forward energy / 100
+        set energy energy - 1
+      ]
+      if energy < 30 [
+        right random 45
+        left random 45
+        forward 0.6
+      ]
+      ;;Show energy
+      ifelse show-energy?
+      [ set label energy ]
+      [ set label "" ]
+    ]
+    eat-human
+  ]
+
+  ;;State Follow tactics
+  if State = "Step3"[
+    if not any? humans [stop]
+    ask zombies [
+
+      ;;Only move if you have energy
+
+        ;;Check if zombie has a target otherwise set target to be the closest human
+        set target min-one-of humans in-radius vision-radius [distance myself]
+        if(target != nobody) [
+          face target
+        ]
+      if energy > 100 [
+          forward 1
+          set energy energy - 1
+      ]
+      if energy <= 40 [
+          forward 0.4
+      ]
+      if energy < 100 and energy > 40 [
+          forward energy / 100
+          set energy energy - 1
+      ]
+
+      ;;Show energy
+      ifelse show-energy?
+      [ set label energy ]
+      [ set label "" ]
+    ]
+    eat-human
+  ]
+
+end
+
+to eat-human
+  ask zombies [
+    if any? other humans-here [
+      hatch-zombies count humans-here [
+        set shape "zombie"
+        set size 3
+        set energy energy-start-zombies
+      ]
+      ask humans-here [die]
+      set energy energy + zombies-energy-gain
+    ]
+    set target nobody
+  ]
+end
 
 ; --zombie agents main function ----------------------
 to live-zombies
-; <3-digit initial of programmer for each subfunction of the agent>
-  ;TEMP TESTFUNCTIONS
-  move-zombies ; MNM
-  eat-humans
+  ; <3-digit initial of programmer for each subfunction of the agent>
+  move-zombies(Tactics)
 end
-; end zombie agents main function --------------------
-
-; --zombie agents procedures/reporters ----------------
-; <3-digit initial of programmer for each procedure>
-to move-zombies ;temp. testfunction MNM
-  ask zombies [
-    set energy energy - 1
-    right random 50
-    left random 50
-    if energy > 0 [ forward 1]
-  ]
-end
-
-to eat-humans
-  ask zombies [
-    let prey one-of humans-here
-    if prey != nobody [
-      ask prey [die]
-      hatch 1 [
-        set shape "zombie"
-        set color red
-        set size 3  ; easier to see
-        set energy random (2 * zombies-energy-gain)
-      ]
-      set energy energy + zombies-energy-gain
-    ]
-  ]
-end
+; end zombie agents main function -------------------
+;to setup-zombies
+;  create-zombies initial-number-zombies
+;  [
+;    set shape "zombie"
+;    set color red
+;    set size 3  ; easier to see
+;    setxy random-xcor random-ycor
+;    set energy random (2 * zombies-energy-gain)
+;  ]
+;end
+;; end setup zombie agents ----------------------------
+;
+;; --zombie agents main function ----------------------
+;to live-zombies
+;; <3-digit initial of programmer for each subfunction of the agent>
+;  ;TEMP TESTFUNCTIONS
+;  move-zombies ; MNM
+;  eat-humans
+;end
+;; end zombie agents main function --------------------
+;
+;; --zombie agents procedures/reporters ----------------
+;; <3-digit initial of programmer for each procedure>
+;to move-zombies ;temp. testfunction MNM
+;  ask zombies [
+;    set energy energy - 1
+;    right random 50
+;    left random 50
+;    if energy > 0 [ forward 1]
+;  ]
+;end
+;
+;to eat-humans
+;  ask zombies [
+;    let prey one-of humans-here
+;    if prey != nobody [
+;      ask prey [die]
+;      hatch 1 [
+;        set shape "zombie"
+;        set color red
+;        set size 3  ; easier to see
+;        set energy random (2 * zombies-energy-gain)
+;      ]
+;      set energy energy + zombies-energy-gain
+;    ]
+;  ]
+;end
 ; end zombie agents procedures/reporters -------------
 
 ; **************************
@@ -302,7 +401,7 @@ initial-number-humans
 initial-number-humans
 0
 50
-7.0
+10.0
 1
 1
 NIL
@@ -317,7 +416,7 @@ initial-number-zombies
 initial-number-zombies
 1
 50
-7.0
+10.0
 1
 1
 NIL
@@ -413,6 +512,57 @@ maximum-age
 0
 100
 86.0
+1
+1
+NIL
+HORIZONTAL
+
+SLIDER
+1097
+81
+1269
+114
+energy-start-zombies
+energy-start-zombies
+0
+200
+75.0
+1
+1
+NIL
+HORIZONTAL
+
+CHOOSER
+1104
+131
+1242
+176
+Tactics
+Tactics
+"Step2" "Step3" "Step4"
+1
+
+SWITCH
+1124
+225
+1259
+258
+Show-energy?
+Show-energy?
+0
+1
+-1000
+
+SLIDER
+887
+289
+1059
+322
+vision-radius
+vision-radius
+0
+10
+8.0
 1
 1
 NIL
