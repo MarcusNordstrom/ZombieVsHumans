@@ -25,7 +25,7 @@ breed [ humans human ]
 
 ; ************* AGENT-SPECIFIC VARIABLES *********
 turtles-own []
-zombies-own [energy]
+zombies-own [energy target]
 humans-own [latest-birth age]
 ; ***************************
 
@@ -103,7 +103,7 @@ end
 
 ; <3-digit initial of programmer for each procedure>
 to reproduce-humans ;MNM
-  ask humans with [color = pink and age >= reproduction-age and age >= latest-birth] [
+  ask humans with [color = pink and age >= reproduction-age and age > latest-birth] [
     if any? humans-here with [color = blue] [
       set latest-birth age
       hatch random 3 [
@@ -120,24 +120,26 @@ end
 
 to move-humans ;MNM
   ask humans [
+
     let zomb min-one-of zombies in-radius 8 [distance myself]
     ifelse zomb != nobody [
       ;run away from zombie
       set heading towards zomb
-      right 180
+      ;right 180
+      right 160 + random 20
       forward 1
     ] [
       let person min-one-of other humans in-radius 8 [distance myself]
-      if person != nobody [
-        ifelse [distance myself] of person > 3 [
+      ifelse person != nobody [
+        if [distance myself] of person > 3 [
           set heading towards person
           forward 1
-        ] [
+        ]
+      ] [
           right random 30
           left random 30
           forward 1
         ]
-      ]
      ]
     ]
 end
@@ -153,7 +155,6 @@ end
 ; --zombie agents procedures/reporters ----------------
 ; <3-digit initial of programmer for each procedure>
 ; end zombie agents procedures/reporters -------------
-
 ; ************************
 to setup-zombies
   create-zombies initial-number-zombies
@@ -172,7 +173,6 @@ to live-zombies
 ; <3-digit initial of programmer for each subfunction of the agent>
   ;TEMP TESTFUNCTIONS
   move-zombies ; MNM
-  check-death-zombies ;MNM
   eat-humans
 end
 ; end zombie agents main function --------------------
@@ -184,13 +184,7 @@ to move-zombies ;temp. testfunction MNM
     set energy energy - 1
     right random 50
     left random 50
-    forward 1
-  ]
-end
-
-to check-death-zombies
-  ask zombies [
-    if energy <= 0 [die]
+    if energy > 0 [ forward 1]
   ]
 end
 
@@ -277,7 +271,7 @@ NIL
 T
 OBSERVER
 NIL
-NIL
+S
 NIL
 NIL
 1
@@ -294,7 +288,7 @@ T
 T
 OBSERVER
 NIL
-NIL
+G
 NIL
 NIL
 0
@@ -363,21 +357,6 @@ PENS
 "Zombies" 1.0 0 -10899396 true "" "plot count zombies"
 "Women" 1.0 0 -2064490 true "" "plot count humans with [color = pink]"
 "Men" 1.0 0 -13345367 true "" "plot count humans with [color = blue]"
-
-SLIDER
-793
-10
-965
-43
-reproduce-delay
-reproduce-delay
-0
-500
-250.0
-1
-1
-NIL
-HORIZONTAL
 
 SLIDER
 794
