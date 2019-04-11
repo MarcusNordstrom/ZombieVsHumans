@@ -26,7 +26,7 @@ breed [ humans human ]
 ; ************* AGENT-SPECIFIC VARIABLES *********
 turtles-own []
 zombies-own [energy target]
-humans-own [latest-birth age]
+humans-own [latest-birth age parents]
 ; ***************************
 
 
@@ -82,7 +82,6 @@ end
 
 ; --human agents main function ----------------------
 to live-humans
-  ; <3-digit initial of programmer for each subfunction of the agent>
   year-counter
   move-humans
   reproduce-humans
@@ -94,26 +93,50 @@ to year-counter ;MNM
   set age-counter (age-counter + 1)
   if (age-counter = ticks-per-year) [
     set age-counter 0
-    ;   ask humans [
-    ;     set age (age + 1)
-    ;      if age >= (maximum-age + (random 10) - (random 10)) [ die ]
-    ;    ]
+    ;DIE OF AGE
+    ask humans [
+      set age (age + 1)
+      ;if age >= (maximum-age + (random 10) - (random 10)) [ die ]
+    ]
   ]
 end
 
 ; <3-digit initial of programmer for each procedure>
 to reproduce-humans ;MNM
-  ask humans with [color = pink and age >= reproduction-age and age > latest-birth] [
-    if any? humans-here with [color = blue] [
-      set latest-birth age
-      hatch random 3 [
-        ifelse random 2 = 0 [set color pink] [set color blue]
-        set age 0
-        right random 360
-        forward 1
+  if Tactics = "Step3" [
+    ask humans with [color = pink and age >= reproduction-age and age > latest-birth] [
+      if any? humans-here with [color = blue] [
+        set latest-birth age
+        hatch random 3 [
+          ifelse random 2 = 0 [set color pink] [set color blue]
+          set age 0
+          right random 360
+          forward 1
+        ]
       ]
     ]
   ]
+  if Tactics = "Step4" [
+     ;check family and then set hatched parents to current
+    ask humans with [color = pink and age >= reproduction-age and age > latest-birth] [
+      let man one-of humans-here with [color = blue]
+      if man != nobody [
+        let manID 0
+        ask man [set manID who]
+        let womanID who
+        if(family(womanID)(manID) != 0) [
+          hatch random 3 [
+            ifelse random 2 = 0 [set color pink] [set color blue]
+            set age 0
+            set parents list (womanID) (manID)
+            right random 360
+            forward 1
+        ]
+        ]
+      ]
+    ]
+  ]
+
 end
 
 to-report family[female male];TO BE IMPLEMENTED (FAMILY TREE)
@@ -123,32 +146,46 @@ to-report family[female male];TO BE IMPLEMENTED (FAMILY TREE)
 end
 
 to move-humans ;MNM
-  ask humans [
-
-    let zomb min-one-of zombies in-radius vision-radius [distance myself]
-    ifelse zomb != nobody [
-      ;run away from zombie
-      set heading towards zomb
-      ;right 180
-      right 160 + random 20
-      forward 1
-    ] [
-      let person min-one-of other humans in-radius vision-radius [distance myself]
-      ifelse person != nobody [
-        if [distance myself] of person > 3 [
-          set heading towards person
-          right random 5
-          left random 5
-          forward 1
-        ]
+  if Tactics = "Step2" [
+    ask humans [
+      let zomb min-one-of zombies in-radius vision-radius [distance myself]
+      ifelse zomb != nobody [
+        ;run away from zombie
+        set heading towards zomb
+        ;right 180
+        right 160 + random 20
+        forward 1
       ] [
         right random 30
         left random 30
         forward 1
       ]
-      ;right random 30
-      ;left random 30
-      ;forward 1
+    ]
+  ]
+  if Tactics = "Step3" [
+    ask humans [
+      let zomb min-one-of zombies in-radius vision-radius [distance myself]
+      ifelse zomb != nobody [
+        ;run away from zombie
+        set heading towards zomb
+        ;right 180
+        right 160 + random 20
+        forward 1
+      ] [
+        let person min-one-of other humans in-radius vision-radius [distance myself]
+        ifelse person != nobody [
+          if [distance myself] of person > 3 [
+            set heading towards person
+            right random 5
+            left random 5
+            forward 1
+          ]
+        ] [
+          right random 30
+          left random 30
+          forward 1
+        ]
+      ]
     ]
   ]
 end
@@ -207,21 +244,21 @@ to move-zombies[State]
 
       ;;Only move if you have energy
 
-        ;;Check if zombie has a target otherwise set target to be the closest human
-        set target min-one-of humans in-radius vision-radius [distance myself]
-        if(target != nobody) [
-          face target
-        ]
-      if energy > 100 [
-          forward 1
-          set energy energy - 1
+      ;;Check if zombie has a target otherwise set target to be the closest human
+      set target min-one-of humans in-radius vision-radius [distance myself]
+      if(target != nobody) [
+        face target
+      ]
+      if energy > 99 [
+        forward 1
+        set energy energy - 1
       ]
       if energy <= 40 [
-          forward 0.4
+        forward 0.4
       ]
       if energy < 100 and energy > 40 [
-          forward energy / 100
-          set energy energy - 1
+        forward energy / 100
+        set energy energy - 1
       ]
 
       ;;Show energy
@@ -313,8 +350,9 @@ end
 ; |3-digit|  Name
 ; |-------|--------------------------------------------
 ; | <MNM> | Marcus Nordström
-; |       |
-; |       |
+; | <AKB> | Anna Brondin
+; | <AJA> | Aziz Jashari
+; | <DHL> | Daniel Lone
 ; |----------------------------------------------------
 ; -----------------------------------------------------
 
@@ -332,9 +370,9 @@ end
 ; #################################################################################################################
 @#$#@#$#@
 GRAPHICS-WINDOW
-217
+360
 10
-771
+914
 565
 -1
 -1
@@ -393,40 +431,40 @@ NIL
 0
 
 SLIDER
-13
-225
-185
-258
+94
+233
+266
+266
 initial-number-humans
 initial-number-humans
 0
 50
-10.0
+20.0
 1
 1
 NIL
 HORIZONTAL
 
 SLIDER
-14
-275
-186
-308
+95
+283
+267
+316
 initial-number-zombies
 initial-number-zombies
 1
 50
-10.0
+5.0
 1
 1
 NIL
 HORIZONTAL
 
 SLIDER
-14
-318
-186
-351
+95
+326
+267
+359
 zombies-energy-gain
 zombies-energy-gain
 0
@@ -458,10 +496,10 @@ PENS
 "Men" 1.0 0 -13345367 true "" "plot count humans with [color = blue]"
 
 SLIDER
-794
-52
-966
-85
+94
+25
+266
+58
 setup-age
 setup-age
 0
@@ -473,10 +511,10 @@ NIL
 HORIZONTAL
 
 SLIDER
-794
-92
-966
-125
+94
+65
+266
+98
 ticks-per-year
 ticks-per-year
 0
@@ -488,10 +526,10 @@ NIL
 HORIZONTAL
 
 SLIDER
-795
-134
-967
-167
+95
+107
+267
+140
 reproduction-age
 reproduction-age
 0
@@ -503,10 +541,10 @@ NIL
 HORIZONTAL
 
 SLIDER
-795
-174
-967
-207
+95
+147
+267
+180
 maximum-age
 maximum-age
 0
@@ -554,10 +592,10 @@ Show-energy?
 -1000
 
 SLIDER
-887
-289
-1059
-322
+95
+191
+267
+224
 vision-radius
 vision-radius
 0
