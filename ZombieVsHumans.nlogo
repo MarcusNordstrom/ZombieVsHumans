@@ -98,6 +98,7 @@ to year-counter ;MNM
       set age (age + 1)
       ;if age >= (maximum-age + (random 10) - (random 10)) [ die ]
     ]
+      ask humans with [size < 2] [set size (size + 0.1) ]
   ]
 end
 
@@ -110,6 +111,7 @@ to reproduce-humans ;MNM
         hatch random 3 [
           ifelse random 2 = 0 [set color pink] [set color blue]
           set age 0
+          set size 0.1
           right random 360
           forward 1
         ]
@@ -161,6 +163,10 @@ to move-humans ;MNM
         forward 1
       ]
     ]
+      ;Show age
+      ifelse show-age
+      [ set label age ]
+      [ set label "" ]
   ]
   if Tactics = "Step3" [
     ask humans [
@@ -605,6 +611,17 @@ vision-radius
 1
 NIL
 HORIZONTAL
+
+SWITCH
+16
+119
+134
+152
+Show-age
+Show-age
+0
+1
+-1000
 
 @#$#@#$#@
 ## WHAT IS IT?
