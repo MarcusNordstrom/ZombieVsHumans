@@ -164,9 +164,9 @@ to move-humans ;MNM
       ]
     ]
       ;Show age
-      ifelse show-age
-      [ set label age ]
-      [ set label "" ]
+;      ifelse show-age
+;      [ set label age ]
+;      [ set label "" ]
   ]
   if Tactics = "Step3" [
     ask humans [
@@ -445,7 +445,7 @@ initial-number-humans
 initial-number-humans
 0
 50
-20.0
+0.0
 1
 1
 NIL
@@ -460,7 +460,7 @@ initial-number-zombies
 initial-number-zombies
 1
 50
-5.0
+0.0
 1
 1
 NIL
@@ -475,7 +475,7 @@ zombies-energy-gain
 zombies-energy-gain
 0
 100
-75.0
+0.0
 1
 1
 NIL
@@ -510,7 +510,7 @@ setup-age
 setup-age
 0
 100
-50.0
+0.0
 1
 1
 NIL
@@ -525,7 +525,7 @@ ticks-per-year
 ticks-per-year
 0
 100
-50.0
+0.0
 1
 1
 NIL
@@ -540,7 +540,7 @@ reproduction-age
 reproduction-age
 0
 100
-25.0
+0.0
 1
 1
 NIL
@@ -555,7 +555,7 @@ maximum-age
 maximum-age
 0
 100
-86.0
+0.0
 1
 1
 NIL
@@ -570,7 +570,7 @@ energy-start-zombies
 energy-start-zombies
 0
 200
-75.0
+0.0
 1
 1
 NIL
@@ -606,7 +606,7 @@ vision-radius
 vision-radius
 0
 10
-8.0
+0.0
 1
 1
 NIL
