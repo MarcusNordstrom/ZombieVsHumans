@@ -26,7 +26,8 @@ breed [ humans human ]
 ; ************* AGENT-SPECIFIC VARIABLES *********
 turtles-own []
 zombies-own [energy target]
-humans-own [latest-birth age parents]
+humans-own [latest-birth age parents HState]
+
 ; ***************************
 
 
@@ -51,6 +52,7 @@ to go
 
   if count humans > 200 [stop]
   if count zombies > 200 [stop]
+
 end
 ; **************************
 
@@ -65,6 +67,7 @@ to setup-humans ;MNM
     set shape "person"
     set color blue
     set age random setup-age
+    set HState "Wander"
     set size 2  ; easier to see
     setxy random-xcor random-ycor
   ]
@@ -73,6 +76,7 @@ to setup-humans ;MNM
     set shape "person"
     set color pink
     set age random setup-age
+    set HState "Wander"
     set latest-birth 0
     set size 2  ; easier to see
     setxy random-xcor random-ycor
@@ -83,7 +87,8 @@ end
 ; --human agents main function ----------------------
 to live-humans
   year-counter
-  move-humans
+  ;move-humans
+  change-state
   reproduce-humans
 end
 ; end human agents main function --------------------
@@ -98,7 +103,7 @@ to year-counter ;MNM
       set age (age + 1)
       ;if age >= (maximum-age + (random 10) - (random 10)) [ die ]
     ]
-      ask humans with [size < 2] [set size (size + 0.1) ]
+    ask humans with [size < 2] [set size (size + 0.1) ]
   ]
 end
 
@@ -119,27 +124,21 @@ to reproduce-humans ;MNM
     ]
   ]
   if Tactics = "Step4" [
-     ;check family and then set hatched parents to current
+    ;check family and then set hatched parents to current
     ask humans with [color = pink and age >= reproduction-age and age > latest-birth] [
       let man one-of humans-here with [color = blue]
       if man != nobody [
-        let manP 0
         let manID 0
-        ask man [
-          set manP parents
-          set manID who
-        ]
+        ask man [set manID who]
         let womanID who
-        let femaleP 0
-        set femaleP parents
-        if(family(manP)(femaleP) != 0) [
+        if(family(womanID)(manID) != 0) [
           hatch random 3 [
             ifelse random 2 = 0 [set color pink] [set color blue]
             set age 0
             set parents list (womanID) (manID)
             right random 360
             forward 1
-        ]
+          ]
         ]
       ]
     ]
@@ -147,14 +146,36 @@ to reproduce-humans ;MNM
 
 end
 
-to-report family[maleP femaleP];TO BE IMPLEMENTED (FAMILY TREE)
-  show "MALE"
-  show maleP
-  show "FEMALE"
-  show femaleP
+to-report family[female male];TO BE IMPLEMENTED (FAMILY TREE)
+  show who
   report 1
-  ;report 0
+  report 0
 end
+
+to-report zombInArea[person] ; Return whether there is a zombie, human or both nearby. DAB & MNM
+
+  let zomb min-one-of zombies in-radius vision-radius [distance human person]
+
+  if zomb != nobody [
+    show 0
+    report zomb
+  ]
+
+  report nobody
+
+end
+
+to-report humanInArea[person] ; Return whether there is a zombie, human or both nearby. DAB & MNM
+  let otherPerson min-one-of other humans in-radius vision-radius [distance human person]
+  ifelse otherPerson != NOBODY [
+    if [distance human person] of otherPerson > 3 [
+      show 1
+      report otherPerson
+    ]
+  ] [report nobody]
+  report nobody
+end
+
 
 to move-humans ;MNM
   if Tactics = "Step2" [
@@ -172,10 +193,17 @@ to move-humans ;MNM
         forward 1
       ]
     ]
+
+    ;Show age
+    ;ifelse show-age
+    ;[ set label age ]
+    ;[ set label "" ]
+
       ;Show age
-      ;ifelse Show-age
-      ;[ set label age ]
-      ;[ set label "" ]
+;      ifelse show-age
+;      [ set label age ]
+;      [ set label "" ]
+
   ]
   if Tactics = "Step3" [
     ask humans [
@@ -203,32 +231,76 @@ to move-humans ;MNM
       ]
     ]
   ]
-  if Tactics = "Step4" [ ;CURRENTLY IDENTICAL TO Step3
-    ask humans [
-      let zomb min-one-of zombies in-radius vision-radius [distance myself]
-      ifelse zomb != nobody [
-        ;run away from zombie
-        set heading towards zomb
-        ;right 180
-        right 160 + random 20
-        forward 1
-      ] [
-        let person min-one-of other humans in-radius vision-radius [distance myself]
-        ifelse person != nobody [
-          if [distance myself] of person > 3 [
-            set heading towards person
-            right random 5
-            left random 5
-            forward 1
-          ]
-        ] [
-          right random 30
-          left random 30
-          forward 1
-        ]
+end
+
+to change-state ; MNM & DAB
+
+  ask humans [
+
+    ifelse HState = "Wander" [
+
+      ; Check to see if a zombie is nearby.
+
+      ifelse zombInArea(who) != nobody [
+        set HState "Flee"
+        Flee(zombInArea(who))
+        show 0
+      ] [ifelse humanInArea(who) != nobody [
+          set HState "Group"
+          Group(humanInArea(who))
+        ] [Wander]
+
       ]
     ]
+
+    [ifelse HState = "Flee" [
+      show 1
+      ifelse zombInArea(who) != nobody [
+        Flee(zombInArea(who))
+
+      ] [set HState "Wander"
+        Wander]
+
+      ]
+
+      [ifelse HState = "Group"[
+        show 2
+        ifelse zombInArea(who) != nobody [
+
+          set HState "Flee"
+          Flee(zombInArea(who))
+
+
+        ] [ifelse humanInArea(who) != nobody [
+            Group(humanInArea(who))
+
+        ][set HState "Wander" Wander]]
+
+      ][]]
+    ]
   ]
+
+
+
+end
+
+to Group [person] ; MNM & DAB
+  set heading towards person
+  right random 5
+  left random 5
+  forward 1
+end
+to Flee [zomb] ; MNM & DAB
+  ;run away from zombie
+  set heading towards zomb
+  ;right 180
+  right 160 + random 20
+  forward 1
+end
+to Wander ; MNM & DAB
+  right random 30
+  left random 30
+  forward 1
 end
 ; end human agents procedures/reporters -------------
 
@@ -303,42 +375,13 @@ to move-zombies[State]
       ]
 
       ;;Show energy
-      ifelse show-energy?
-      [ set label energy ]
-      [ set label "" ]
+      ;ifelse show-energy?
+      ;[ set label energy ]
+      ;[ set label "" ]
     ]
     eat-human
   ]
-if State = "Step4"[ ;IDENTICAL TO STEP 3
-    if not any? humans [stop]
-    ask zombies [
 
-      ;;Only move if you have energy
-
-      ;;Check if zombie has a target otherwise set target to be the closest human
-      set target min-one-of humans in-radius vision-radius [distance myself]
-      if(target != nobody) [
-        face target
-      ]
-      if energy > 99 [
-        forward 1
-        set energy energy - 1
-      ]
-      if energy <= 40 [
-        forward 0.4
-      ]
-      if energy < 100 and energy > 40 [
-        forward energy / 100
-        set energy energy - 1
-      ]
-
-      ;;Show energy
-      ifelse show-energy?
-      [ set label energy ]
-      [ set label "" ]
-    ]
-    eat-human
-  ]
 end
 
 to eat-human
@@ -423,6 +466,7 @@ end
 ; | <AKB> | Anna Brondin
 ; | <AJA> | Aziz Jashari
 ; | <DHL> | Daniel Lone
+; | <DAB> | Daniel Abella
 ; |----------------------------------------------------
 ; -----------------------------------------------------
 
@@ -440,13 +484,13 @@ end
 ; #################################################################################################################
 @#$#@#$#@
 GRAPHICS-WINDOW
-360
+210
 10
-914
-565
+647
+448
 -1
 -1
-16.55
+13.0
 1
 10
 1
@@ -466,64 +510,120 @@ GRAPHICS-WINDOW
 ticks
 30.0
 
-BUTTON
-14
-24
-77
-57
-NIL
-setup
-NIL
-1
-T
-OBSERVER
-NIL
-S
-NIL
-NIL
-1
-
-BUTTON
-15
-68
-78
-101
-NIL
-go
-T
-1
-T
-OBSERVER
-NIL
-G
-NIL
-NIL
-0
-
 SLIDER
-94
-233
-266
-266
-initial-number-humans
-initial-number-humans
+8
+27
+180
+60
+setup-age
+setup-age
 0
-50
-25.0
+100
+1.0
 1
 1
 NIL
 HORIZONTAL
 
 SLIDER
-95
-283
-267
-316
+10
+78
+182
+111
+ticks-per-year
+ticks-per-year
+0
+100
+30.0
+1
+1
+NIL
+HORIZONTAL
+
+SLIDER
+10
+134
+182
+167
+reproduction-age
+reproduction-age
+0
+100
+4.0
+1
+1
+NIL
+HORIZONTAL
+
+SLIDER
+15
+197
+187
+230
+maximum-age
+maximum-age
+0
+100
+6.0
+1
+1
+NIL
+HORIZONTAL
+
+SLIDER
+19
+259
+191
+292
+vision-radius
+vision-radius
+0
+10
+1.0
+1
+1
+NIL
+HORIZONTAL
+
+SLIDER
+20
+330
+192
+363
+initial-number-humans
+initial-number-humans
+0
+50
+6.0
+1
+1
+NIL
+HORIZONTAL
+
+SLIDER
+27
+382
+199
+415
 initial-number-zombies
 initial-number-zombies
 1
 50
+3.0
+1
+1
+NIL
+HORIZONTAL
+
+SLIDER
+24
+431
+196
+464
+zombies-energy-gain
+zombies-energy-gain
+0
+100
 5.0
 1
 1
@@ -531,25 +631,57 @@ NIL
 HORIZONTAL
 
 SLIDER
-95
-326
-267
-359
-zombies-energy-gain
-zombies-energy-gain
+677
+29
+849
+62
+energy-start-zombies
+energy-start-zombies
 0
-100
+200
 50.0
 1
 1
 NIL
 HORIZONTAL
 
+SWITCH
+691
+112
+802
+145
+Show-age
+Show-age
+1
+1
+-1000
+
+CHOOSER
+976
+43
+1114
+88
+Tactics
+Tactics
+"Step2" "Step3" "Step4"
+0
+
+SWITCH
+1033
+212
+1168
+245
+Show-energy?
+Show-energy?
+0
+1
+-1000
+
 PLOT
-2
-395
-202
-545
+767
+251
+967
+401
 plot 1
 NIL
 NIL
@@ -561,131 +693,43 @@ true
 false
 "" ""
 PENS
-"Zombies" 1.0 0 -10899396 true "" "plot count zombies"
+"Zombies" 1.0 0 -13840069 true "" "plot count zombies"
 "Women" 1.0 0 -2064490 true "" "plot count humans with [color = pink]"
-"Men" 1.0 0 -13345367 true "" "plot count humans with [color = blue]"
+"Men" 1.0 0 -14070903 true "" "plot count humans with [color = blue]"
 
-SLIDER
-94
-25
-266
-58
-setup-age
-setup-age
-0
-100
-50.0
-1
-1
+BUTTON
+1060
+295
+1123
+328
 NIL
-HORIZONTAL
-
-SLIDER
-94
-65
-266
-98
-ticks-per-year
-ticks-per-year
-0
-100
-40.0
-1
-1
+setup
 NIL
-HORIZONTAL
-
-SLIDER
-95
-107
-267
-140
-reproduction-age
-reproduction-age
-0
-100
-22.0
 1
-1
+T
+OBSERVER
 NIL
-HORIZONTAL
-
-SLIDER
-95
-147
-267
-180
-maximum-age
-maximum-age
-0
-100
-72.0
-1
-1
+5
 NIL
-HORIZONTAL
-
-SLIDER
-1097
-81
-1269
-114
-energy-start-zombies
-energy-start-zombies
-0
-200
-10.0
-1
-1
 NIL
-HORIZONTAL
-
-CHOOSER
-1104
-131
-1242
-176
-Tactics
-Tactics
-"Step2" "Step3" "Step4"
-2
-
-SWITCH
-1124
-225
-1259
-258
-Show-energy?
-Show-energy?
-0
 1
--1000
 
-SLIDER
-95
-191
-267
-224
-vision-radius
-vision-radius
-0
-10
-4.0
-1
-1
+BUTTON
+1067
+359
+1130
+392
 NIL
-HORIZONTAL
-
-SWITCH
-951
-74
-1069
-107
-Show-age
-Show-age
-0
+go
+T
 1
--1000
+T
+OBSERVER
+NIL
+G
+NIL
+NIL
+0
 
 @#$#@#$#@
 ## WHAT IS IT?
