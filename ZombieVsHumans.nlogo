@@ -123,10 +123,16 @@ to reproduce-humans ;MNM
     ask humans with [color = pink and age >= reproduction-age and age > latest-birth] [
       let man one-of humans-here with [color = blue]
       if man != nobody [
+        let manP 0
         let manID 0
-        ask man [set manID who]
+        ask man [
+          set manP parents
+          set manID who
+        ]
         let womanID who
-        if(family(womanID)(manID) != 0) [
+        let femaleP 0
+        set femaleP parents
+        if(family(manP)(femaleP) != 0) [
           hatch random 3 [
             ifelse random 2 = 0 [set color pink] [set color blue]
             set age 0
@@ -141,10 +147,13 @@ to reproduce-humans ;MNM
 
 end
 
-to-report family[female male];TO BE IMPLEMENTED (FAMILY TREE)
-  show who
+to-report family[maleP femaleP];TO BE IMPLEMENTED (FAMILY TREE)
+  show "MALE"
+  show maleP
+  show "FEMALE"
+  show femaleP
   report 1
-  report 0
+  ;report 0
 end
 
 to move-humans ;MNM
@@ -164,11 +173,37 @@ to move-humans ;MNM
       ]
     ]
       ;Show age
-;      ifelse show-age
-;      [ set label age ]
-;      [ set label "" ]
+      ;ifelse Show-age
+      ;[ set label age ]
+      ;[ set label "" ]
   ]
   if Tactics = "Step3" [
+    ask humans [
+      let zomb min-one-of zombies in-radius vision-radius [distance myself]
+      ifelse zomb != nobody [
+        ;run away from zombie
+        set heading towards zomb
+        ;right 180
+        right 160 + random 20
+        forward 1
+      ] [
+        let person min-one-of other humans in-radius vision-radius [distance myself]
+        ifelse person != nobody [
+          if [distance myself] of person > 3 [
+            set heading towards person
+            right random 5
+            left random 5
+            forward 1
+          ]
+        ] [
+          right random 30
+          left random 30
+          forward 1
+        ]
+      ]
+    ]
+  ]
+  if Tactics = "Step4" [ ;CURRENTLY IDENTICAL TO Step3
     ask humans [
       let zomb min-one-of zombies in-radius vision-radius [distance myself]
       ifelse zomb != nobody [
@@ -274,7 +309,36 @@ to move-zombies[State]
     ]
     eat-human
   ]
+if State = "Step4"[ ;IDENTICAL TO STEP 3
+    if not any? humans [stop]
+    ask zombies [
 
+      ;;Only move if you have energy
+
+      ;;Check if zombie has a target otherwise set target to be the closest human
+      set target min-one-of humans in-radius vision-radius [distance myself]
+      if(target != nobody) [
+        face target
+      ]
+      if energy > 99 [
+        forward 1
+        set energy energy - 1
+      ]
+      if energy <= 40 [
+        forward 0.4
+      ]
+      if energy < 100 and energy > 40 [
+        forward energy / 100
+        set energy energy - 1
+      ]
+
+      ;;Show energy
+      ifelse show-energy?
+      [ set label energy ]
+      [ set label "" ]
+    ]
+    eat-human
+  ]
 end
 
 to eat-human
@@ -445,7 +509,7 @@ initial-number-humans
 initial-number-humans
 0
 50
-20.0
+25.0
 1
 1
 NIL
@@ -475,7 +539,7 @@ zombies-energy-gain
 zombies-energy-gain
 0
 100
-0.0
+50.0
 1
 1
 NIL
@@ -510,7 +574,7 @@ setup-age
 setup-age
 0
 100
-0.0
+50.0
 1
 1
 NIL
@@ -525,7 +589,7 @@ ticks-per-year
 ticks-per-year
 0
 100
-0.0
+40.0
 1
 1
 NIL
@@ -540,7 +604,7 @@ reproduction-age
 reproduction-age
 0
 100
-0.0
+22.0
 1
 1
 NIL
@@ -555,7 +619,7 @@ maximum-age
 maximum-age
 0
 100
-0.0
+72.0
 1
 1
 NIL
@@ -570,7 +634,7 @@ energy-start-zombies
 energy-start-zombies
 0
 200
-0.0
+10.0
 1
 1
 NIL
@@ -584,7 +648,7 @@ CHOOSER
 Tactics
 Tactics
 "Step2" "Step3" "Step4"
-1
+2
 
 SWITCH
 1124
@@ -606,7 +670,7 @@ vision-radius
 vision-radius
 0
 10
-0.0
+4.0
 1
 1
 NIL
