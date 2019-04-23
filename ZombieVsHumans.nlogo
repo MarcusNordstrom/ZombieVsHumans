@@ -128,10 +128,16 @@ to reproduce-humans ;MNM
     ask humans with [color = pink and age >= reproduction-age and age > latest-birth] [
       let man one-of humans-here with [color = blue]
       if man != nobody [
+        let manP 0
         let manID 0
-        ask man [set manID who]
+        ask man [
+          set manP parents
+          set manID who
+        ]
         let womanID who
-        if(family(womanID)(manID) != 0) [
+        let femaleP 0
+        set femaleP parents
+        if(family(manP)(femaleP) != 0) [
           hatch random 3 [
             ifelse random 2 = 0 [set color pink] [set color blue]
             set age 0
@@ -146,10 +152,13 @@ to reproduce-humans ;MNM
 
 end
 
-to-report family[female male];TO BE IMPLEMENTED (FAMILY TREE)
-  show who
+to-report family[maleP femaleP];TO BE IMPLEMENTED (FAMILY TREE) MNM
+  show "MALE"
+  show maleP
+  show "FEMALE"
+  show femaleP
   report 1
-  report 0
+  ;report 0
 end
 
 to-report zombInArea[person] ; Return whether there is a zombie, human or both nearby. DAB & MNM
