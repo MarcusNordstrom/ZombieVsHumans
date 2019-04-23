@@ -193,10 +193,17 @@ to move-humans ;MNM
         forward 1
       ]
     ]
+<<<<<<< HEAD
     ;Show age
     ;ifelse show-age
     ;[ set label age ]
     ;[ set label "" ]
+=======
+      ;Show age
+;      ifelse show-age
+;      [ set label age ]
+;      [ set label "" ]
+>>>>>>> 0328b8747040768d284b7e33e448c0e756bf449c
   ]
   if Tactics = "Step3" [
     ask humans [
@@ -576,7 +583,11 @@ zombies-energy-gain
 zombies-energy-gain
 0
 100
+<<<<<<< HEAD
 23.0
+=======
+0.0
+>>>>>>> 0328b8747040768d284b7e33e448c0e756bf449c
 1
 1
 NIL
@@ -611,7 +622,11 @@ setup-age
 setup-age
 0
 100
+<<<<<<< HEAD
 12.0
+=======
+0.0
+>>>>>>> 0328b8747040768d284b7e33e448c0e756bf449c
 1
 1
 NIL
@@ -626,7 +641,11 @@ ticks-per-year
 ticks-per-year
 0
 100
+<<<<<<< HEAD
 9.0
+=======
+0.0
+>>>>>>> 0328b8747040768d284b7e33e448c0e756bf449c
 1
 1
 NIL
@@ -641,7 +660,11 @@ reproduction-age
 reproduction-age
 0
 100
+<<<<<<< HEAD
 9.0
+=======
+0.0
+>>>>>>> 0328b8747040768d284b7e33e448c0e756bf449c
 1
 1
 NIL
@@ -656,7 +679,11 @@ maximum-age
 maximum-age
 0
 100
+<<<<<<< HEAD
 12.0
+=======
+0.0
+>>>>>>> 0328b8747040768d284b7e33e448c0e756bf449c
 1
 1
 NIL
@@ -707,17 +734,21 @@ vision-radius
 vision-radius
 0
 10
+<<<<<<< HEAD
 4.0
+=======
+0.0
+>>>>>>> 0328b8747040768d284b7e33e448c0e756bf449c
 1
 1
 NIL
 HORIZONTAL
 
 SWITCH
-16
-119
-134
-152
+951
+74
+1069
+107
 Show-age
 Show-age
 0
