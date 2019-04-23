@@ -26,7 +26,8 @@ breed [ humans human ]
 ; ************* AGENT-SPECIFIC VARIABLES *********
 turtles-own []
 zombies-own [energy target]
-humans-own [latest-birth age parents]
+humans-own [latest-birth age parents HState]
+
 ; ***************************
 
 
@@ -51,6 +52,7 @@ to go
 
   if count humans > 200 [stop]
   if count zombies > 200 [stop]
+
 end
 ; **************************
 
@@ -65,6 +67,7 @@ to setup-humans ;MNM
     set shape "person"
     set color blue
     set age random setup-age
+    set HState "Wander"
     set size 2  ; easier to see
     setxy random-xcor random-ycor
   ]
@@ -73,6 +76,7 @@ to setup-humans ;MNM
     set shape "person"
     set color pink
     set age random setup-age
+    set HState "Wander"
     set latest-birth 0
     set size 2  ; easier to see
     setxy random-xcor random-ycor
@@ -83,7 +87,8 @@ end
 ; --human agents main function ----------------------
 to live-humans
   year-counter
-  move-humans
+  ;move-humans
+  change-state
   reproduce-humans
 end
 ; end human agents main function --------------------
@@ -98,7 +103,7 @@ to year-counter ;MNM
       set age (age + 1)
       ;if age >= (maximum-age + (random 10) - (random 10)) [ die ]
     ]
-      ask humans with [size < 2] [set size (size + 0.1) ]
+    ask humans with [size < 2] [set size (size + 0.1) ]
   ]
 end
 
@@ -119,7 +124,7 @@ to reproduce-humans ;MNM
     ]
   ]
   if Tactics = "Step4" [
-     ;check family and then set hatched parents to current
+    ;check family and then set hatched parents to current
     ask humans with [color = pink and age >= reproduction-age and age > latest-birth] [
       let man one-of humans-here with [color = blue]
       if man != nobody [
@@ -133,7 +138,7 @@ to reproduce-humans ;MNM
             set parents list (womanID) (manID)
             right random 360
             forward 1
-        ]
+          ]
         ]
       ]
     ]
@@ -146,6 +151,31 @@ to-report family[female male];TO BE IMPLEMENTED (FAMILY TREE)
   report 1
   report 0
 end
+
+to-report zombInArea[person] ; Return whether there is a zombie, human or both nearby. DAB & MNM
+
+  let zomb min-one-of zombies in-radius vision-radius [distance human person]
+
+  if zomb != nobody [
+    show 0
+    report zomb
+  ]
+
+  report nobody
+
+end
+
+to-report humanInArea[person] ; Return whether there is a zombie, human or both nearby. DAB & MNM
+  let otherPerson min-one-of other humans in-radius vision-radius [distance human person]
+  ifelse otherPerson != NOBODY [
+    if [distance human person] of otherPerson > 3 [
+      show 1
+      report otherPerson
+    ]
+  ] [report nobody]
+  report nobody
+end
+
 
 to move-humans ;MNM
   if Tactics = "Step2" [
@@ -163,10 +193,10 @@ to move-humans ;MNM
         forward 1
       ]
     ]
-      ;Show age
-      ifelse show-age
-      [ set label age ]
-      [ set label "" ]
+    ;Show age
+    ;ifelse show-age
+    ;[ set label age ]
+    ;[ set label "" ]
   ]
   if Tactics = "Step3" [
     ask humans [
@@ -194,6 +224,76 @@ to move-humans ;MNM
       ]
     ]
   ]
+end
+
+to change-state ; MNM & DAB
+
+  ask humans [
+
+    ifelse HState = "Wander" [
+
+      ; Check to see if a zombie is nearby.
+
+      ifelse zombInArea(who) != nobody [
+        set HState "Flee"
+        Flee(zombInArea(who))
+        show 0
+      ] [ifelse humanInArea(who) != nobody [
+          set HState "Group"
+          Group(humanInArea(who))
+        ] [Wander]
+
+      ]
+    ]
+
+    [ifelse HState = "Flee" [
+      show 1
+      ifelse zombInArea(who) != nobody [
+        Flee(zombInArea(who))
+
+      ] [set HState "Wander"
+        Wander]
+
+      ]
+
+      [ifelse HState = "Group"[
+        show 2
+        ifelse zombInArea(who) != nobody [
+
+          set HState "Flee"
+          Flee(zombInArea(who))
+
+
+        ] [ifelse humanInArea(who) != nobody [
+            Group(humanInArea(who))
+
+        ][set HState "Wander" Wander]]
+
+      ][]]
+    ]
+  ]
+
+
+
+end
+
+to Group [person] ; MNM & DAB
+  set heading towards person
+  right random 5
+  left random 5
+  forward 1
+end
+to Flee [zomb] ; MNM & DAB
+  ;run away from zombie
+  set heading towards zomb
+  ;right 180
+  right 160 + random 20
+  forward 1
+end
+to Wander ; MNM & DAB
+  right random 30
+  left random 30
+  forward 1
 end
 ; end human agents procedures/reporters -------------
 
@@ -268,9 +368,9 @@ to move-zombies[State]
       ]
 
       ;;Show energy
-      ifelse show-energy?
-      [ set label energy ]
-      [ set label "" ]
+      ;ifelse show-energy?
+      ;[ set label energy ]
+      ;[ set label "" ]
     ]
     eat-human
   ]
@@ -359,6 +459,7 @@ end
 ; | <AKB> | Anna Brondin
 ; | <AJA> | Aziz Jashari
 ; | <DHL> | Daniel Lone
+; | <DAB> | Daniel Abella
 ; |----------------------------------------------------
 ; -----------------------------------------------------
 
@@ -445,7 +546,7 @@ initial-number-humans
 initial-number-humans
 0
 50
-20.0
+2.0
 1
 1
 NIL
@@ -460,7 +561,7 @@ initial-number-zombies
 initial-number-zombies
 1
 50
-5.0
+2.0
 1
 1
 NIL
@@ -475,7 +576,7 @@ zombies-energy-gain
 zombies-energy-gain
 0
 100
-75.0
+23.0
 1
 1
 NIL
@@ -510,7 +611,7 @@ setup-age
 setup-age
 0
 100
-50.0
+12.0
 1
 1
 NIL
@@ -525,7 +626,7 @@ ticks-per-year
 ticks-per-year
 0
 100
-50.0
+9.0
 1
 1
 NIL
@@ -540,7 +641,7 @@ reproduction-age
 reproduction-age
 0
 100
-25.0
+9.0
 1
 1
 NIL
@@ -555,7 +656,7 @@ maximum-age
 maximum-age
 0
 100
-86.0
+12.0
 1
 1
 NIL
@@ -570,7 +671,7 @@ energy-start-zombies
 energy-start-zombies
 0
 200
-75.0
+0.0
 1
 1
 NIL
@@ -606,7 +707,7 @@ vision-radius
 vision-radius
 0
 10
-8.0
+4.0
 1
 1
 NIL
