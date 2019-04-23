@@ -68,8 +68,12 @@ to setup-humans ;MNM
     set color blue
     set age random setup-age
     set HState "Wander"
-    set size 2  ; easier to see
+    ;set size 2  ; easier to see
     setxy random-xcor random-ycor
+
+    ask humans with [age < 10][set size 1]
+    ask humans with [age >= 10 and age < 15][set size 1.5]
+    ask humans with [age >= 15 ][set size 2]
   ]
   create-humans (initial-number-humans / 2)
   [
@@ -78,14 +82,19 @@ to setup-humans ;MNM
     set age random setup-age
     set HState "Wander"
     set latest-birth 0
-    set size 2  ; easier to see
+    ;set size 2  ; easier to see
     setxy random-xcor random-ycor
+
+    ask humans with [age < 10][set size 1]
+    ask humans with [age >= 10 and age < 15][set size 1.5]
+    ask humans with [age >= 15 ][set size 2]
   ]
 end
 ; end setup human agents ----------------------------
 
 ; --human agents main function ----------------------
 to live-humans
+  ask humans [ifelse show-age [set label age] [set label ""]]
   year-counter
   ;move-humans
   change-state
@@ -116,7 +125,7 @@ to reproduce-humans ;MNM
         hatch random 3 [
           ifelse random 2 = 0 [set color pink] [set color blue]
           set age 0
-          set size 0.1
+          set size 1
           right random 360
           forward 1
         ]
@@ -519,7 +528,7 @@ setup-age
 setup-age
 0
 100
-1.0
+30.0
 1
 1
 NIL
@@ -534,7 +543,7 @@ ticks-per-year
 ticks-per-year
 0
 100
-30.0
+50.0
 1
 1
 NIL
@@ -564,7 +573,7 @@ maximum-age
 maximum-age
 0
 100
-6.0
+70.0
 1
 1
 NIL
@@ -579,7 +588,7 @@ vision-radius
 vision-radius
 0
 10
-1.0
+4.0
 1
 1
 NIL
@@ -652,7 +661,7 @@ SWITCH
 145
 Show-age
 Show-age
-1
+0
 1
 -1000
 
