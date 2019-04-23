@@ -193,17 +193,17 @@ to move-humans ;MNM
         forward 1
       ]
     ]
-<<<<<<< HEAD
+
     ;Show age
     ;ifelse show-age
     ;[ set label age ]
     ;[ set label "" ]
-=======
+
       ;Show age
 ;      ifelse show-age
 ;      [ set label age ]
 ;      [ set label "" ]
->>>>>>> 0328b8747040768d284b7e33e448c0e756bf449c
+
   ]
   if Tactics = "Step3" [
     ask humans [
@@ -484,13 +484,13 @@ end
 ; #################################################################################################################
 @#$#@#$#@
 GRAPHICS-WINDOW
-360
+210
 10
-914
-565
+647
+448
 -1
 -1
-16.55
+13.0
 1
 10
 1
@@ -510,94 +510,178 @@ GRAPHICS-WINDOW
 ticks
 30.0
 
-BUTTON
-14
-24
-77
-57
-NIL
-setup
-NIL
+SLIDER
+8
+27
+180
+60
+setup-age
+setup-age
+0
+100
+1.0
 1
-T
-OBSERVER
-NIL
-S
-NIL
-NIL
 1
+NIL
+HORIZONTAL
 
-BUTTON
-15
-68
+SLIDER
+10
 78
-101
-NIL
-go
-T
-1
-T
-OBSERVER
-NIL
-G
-NIL
-NIL
+182
+111
+ticks-per-year
+ticks-per-year
 0
-
-SLIDER
-94
-233
-266
-266
-initial-number-humans
-initial-number-humans
-0
-50
-2.0
+100
+30.0
 1
 1
 NIL
 HORIZONTAL
 
 SLIDER
-95
-283
-267
-316
-initial-number-zombies
-initial-number-zombies
-1
-50
-2.0
+10
+134
+182
+167
+reproduction-age
+reproduction-age
+0
+100
+4.0
 1
 1
 NIL
 HORIZONTAL
 
 SLIDER
-95
-326
-267
-359
+15
+197
+187
+230
+maximum-age
+maximum-age
+0
+100
+6.0
+1
+1
+NIL
+HORIZONTAL
+
+SLIDER
+19
+259
+191
+292
+vision-radius
+vision-radius
+0
+10
+1.0
+1
+1
+NIL
+HORIZONTAL
+
+SLIDER
+20
+330
+192
+363
+initial-number-humans
+initial-number-humans
+0
+50
+6.0
+1
+1
+NIL
+HORIZONTAL
+
+SLIDER
+27
+382
+199
+415
+initial-number-zombies
+initial-number-zombies
+1
+50
+3.0
+1
+1
+NIL
+HORIZONTAL
+
+SLIDER
+24
+431
+196
+464
 zombies-energy-gain
 zombies-energy-gain
 0
 100
-<<<<<<< HEAD
-23.0
-=======
-0.0
->>>>>>> 0328b8747040768d284b7e33e448c0e756bf449c
+5.0
 1
 1
 NIL
 HORIZONTAL
 
+SLIDER
+677
+29
+849
+62
+energy-start-zombies
+energy-start-zombies
+0
+200
+50.0
+1
+1
+NIL
+HORIZONTAL
+
+SWITCH
+691
+112
+802
+145
+Show-age
+Show-age
+1
+1
+-1000
+
+CHOOSER
+976
+43
+1114
+88
+Tactics
+Tactics
+"Step2" "Step3" "Step4"
+0
+
+SWITCH
+1033
+212
+1168
+245
+Show-energy?
+Show-energy?
+0
+1
+-1000
+
 PLOT
-2
-395
-202
-545
+767
+251
+967
+401
 plot 1
 NIL
 NIL
@@ -609,151 +693,43 @@ true
 false
 "" ""
 PENS
-"Zombies" 1.0 0 -10899396 true "" "plot count zombies"
+"Zombies" 1.0 0 -13840069 true "" "plot count zombies"
 "Women" 1.0 0 -2064490 true "" "plot count humans with [color = pink]"
-"Men" 1.0 0 -13345367 true "" "plot count humans with [color = blue]"
+"Men" 1.0 0 -14070903 true "" "plot count humans with [color = blue]"
 
-SLIDER
-94
-25
-266
-58
-setup-age
-setup-age
-0
-100
-<<<<<<< HEAD
-12.0
-=======
-0.0
->>>>>>> 0328b8747040768d284b7e33e448c0e756bf449c
-1
-1
+BUTTON
+1060
+295
+1123
+328
 NIL
-HORIZONTAL
-
-SLIDER
-94
-65
-266
-98
-ticks-per-year
-ticks-per-year
-0
-100
-<<<<<<< HEAD
-9.0
-=======
-0.0
->>>>>>> 0328b8747040768d284b7e33e448c0e756bf449c
-1
-1
+setup
 NIL
-HORIZONTAL
-
-SLIDER
-95
-107
-267
-140
-reproduction-age
-reproduction-age
-0
-100
-<<<<<<< HEAD
-9.0
-=======
-0.0
->>>>>>> 0328b8747040768d284b7e33e448c0e756bf449c
 1
-1
+T
+OBSERVER
 NIL
-HORIZONTAL
-
-SLIDER
-95
-147
-267
-180
-maximum-age
-maximum-age
-0
-100
-<<<<<<< HEAD
-12.0
-=======
-0.0
->>>>>>> 0328b8747040768d284b7e33e448c0e756bf449c
-1
-1
+5
 NIL
-HORIZONTAL
-
-SLIDER
-1097
-81
-1269
-114
-energy-start-zombies
-energy-start-zombies
-0
-200
-0.0
-1
-1
 NIL
-HORIZONTAL
-
-CHOOSER
-1104
-131
-1242
-176
-Tactics
-Tactics
-"Step2" "Step3" "Step4"
 1
 
-SWITCH
-1124
-225
-1259
-258
-Show-energy?
-Show-energy?
-0
-1
--1000
-
-SLIDER
-95
-191
-267
-224
-vision-radius
-vision-radius
-0
-10
-<<<<<<< HEAD
-4.0
-=======
-0.0
->>>>>>> 0328b8747040768d284b7e33e448c0e756bf449c
-1
-1
+BUTTON
+1067
+359
+1130
+392
 NIL
-HORIZONTAL
-
-SWITCH
-951
-74
-1069
-107
-Show-age
-Show-age
-0
+go
+T
 1
--1000
+T
+OBSERVER
+NIL
+G
+NIL
+NIL
+0
 
 @#$#@#$#@
 ## WHAT IS IT?
