@@ -26,7 +26,7 @@ breed [ humans human ]
 ; ************* AGENT-SPECIFIC VARIABLES *********
 turtles-own []
 zombies-own [energy target]
-humans-own [latest-birth age parents HState]
+humans-own [latest-birth age parents nrOfChildren HState]
 
 ; ***************************
 
@@ -68,6 +68,7 @@ to setup-humans ;MNM
     set color blue
     set age random setup-age
     set HState "Wander"
+    set parents [-1 -1]
     ;set size 2  ; easier to see
     setxy random-xcor random-ycor
 
@@ -82,6 +83,8 @@ to setup-humans ;MNM
     set age random setup-age
     set HState "Wander"
     set latest-birth 0
+    set nrOfChildren 0
+    set parents [-1 -1]
     ;set size 2  ; easier to see
     setxy random-xcor random-ycor
 
@@ -107,10 +110,9 @@ to year-counter ;MNM
   set age-counter (age-counter + 1)
   if (age-counter = ticks-per-year) [
     set age-counter 0
-    ;DIE OF AGE
     ask humans [
       set age (age + 1)
-      ;if age >= (maximum-age + (random 10) - (random 10)) [ die ]
+      if age >= (maximum-age + (random 10) - (random 10)) [ die ]
     ]
     ask humans with [size < 2] [set size (size + 0.1) ]
   ]
@@ -135,7 +137,7 @@ to reproduce-humans ;MNM
   if Tactics = "Step4" [
     ;check family and then set hatched parents to current
     ask humans with [color = pink and age >= reproduction-age and age > latest-birth] [
-      let man one-of humans-here with [color = blue]
+      let man one-of humans-here with [color = blue and age >= reproduction-age]
       if man != nobody [
         let manP 0
         let manID 0
@@ -161,13 +163,22 @@ to reproduce-humans ;MNM
 
 end
 
-to-report family[maleP femaleP];TO BE IMPLEMENTED (FAMILY TREE) MNM
-  show "MALE"
-  show maleP
-  show "FEMALE"
-  show femaleP
-  report 1
-  ;report 0
+to-report family[maleP femaleP];TO BE IMPLEMENTED (FAMILY TREE) MNM & AKB
+;  show "MALE"
+;  show maleP
+;  show "FEMALE"
+;  show femaleP
+  if (item 0 maleP = -1 and item 1 maleP = -1) or (item 0 femaleP = -1 and item 1 femaleP = -1) [
+    show "initial humans, breed"
+    report 1 ;Initial humans, allowed to breed
+  ]
+  ifelse (item 0 maleP = item 0 femaleP) or (item 1 maleP = item 1 femaleP)[
+    show "same parents, don't breed"
+    report 0 ;same parents don't breed
+  ] [
+    show "diffrent parents, allowed to breed"
+    report 1 ;diffrent parents, allowed to breed
+  ]
 end
 
 to-report zombInArea[person] ; Return whether there is a zombie, human or both nearby. DAB & MNM
@@ -175,7 +186,6 @@ to-report zombInArea[person] ; Return whether there is a zombie, human or both n
   let zomb min-one-of zombies in-radius vision-radius [distance human person]
 
   if zomb != nobody [
-    show 0
     report zomb
   ]
 
@@ -187,7 +197,6 @@ to-report humanInArea[person] ; Return whether there is a zombie, human or both 
   let otherPerson min-one-of other humans in-radius vision-radius [distance human person]
   ifelse otherPerson != NOBODY [
     if [distance human person] of otherPerson > 3 [
-      show 1
       report otherPerson
     ]
   ] [report nobody]
@@ -262,7 +271,6 @@ to change-state ; MNM & DAB
       ifelse zombInArea(who) != nobody [
         set HState "Flee"
         Flee(zombInArea(who))
-        show 0
       ] [ifelse humanInArea(who) != nobody [
           set HState "Group"
           Group(humanInArea(who))
@@ -272,7 +280,6 @@ to change-state ; MNM & DAB
     ]
 
     [ifelse HState = "Flee" [
-      show 1
       ifelse zombInArea(who) != nobody [
         Flee(zombInArea(who))
 
@@ -282,7 +289,6 @@ to change-state ; MNM & DAB
       ]
 
       [ifelse HState = "Group"[
-        show 2
         ifelse zombInArea(who) != nobody [
 
           set HState "Flee"
@@ -682,7 +688,7 @@ CHOOSER
 Tactics
 Tactics
 "Step2" "Step3" "Step4"
-0
+2
 
 SWITCH
 1033
@@ -716,10 +722,10 @@ PENS
 "Men" 1.0 0 -14070903 true "" "plot count humans with [color = blue]"
 
 BUTTON
-1060
-295
-1123
-328
+59
+494
+122
+527
 NIL
 setup
 NIL
@@ -733,10 +739,10 @@ NIL
 1
 
 BUTTON
-1067
-359
-1130
-392
+139
+493
+202
+526
 NIL
 go
 T
