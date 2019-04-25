@@ -60,7 +60,7 @@ end
 ; ****************** HUMAN AGENTS PART **************
 ;
 ; --setup human agents --------------------------------
-to setup-humans ;MNM
+to setup-humans ;MNM & AKB & AJA
   set age-counter 0
   create-humans (initial-number-humans / 2)
   [
@@ -71,10 +71,6 @@ to setup-humans ;MNM
     set parents [-1 -1]
     ;set size 2  ; easier to see
     setxy random-xcor random-ycor
-
-    ask humans with [age < 10][set size 1]
-    ask humans with [age >= 10 and age < 15][set size 1.5]
-    ask humans with [age >= 15 ][set size 2]
   ]
   create-humans (initial-number-humans / 2)
   [
@@ -87,11 +83,10 @@ to setup-humans ;MNM
     set parents [-1 -1]
     ;set size 2  ; easier to see
     setxy random-xcor random-ycor
-
-    ask humans with [age < 10][set size 1]
-    ask humans with [age >= 10 and age < 15][set size 1.5]
-    ask humans with [age >= 15 ][set size 2]
   ]
+    ask humans with [age < 2 * reproduction-age][set size 1]
+    ask humans with [age >= 2 * reproduction-age and age < 5 * reproduction-age][set size 1.5]
+    ask humans with [age >= 5 * reproduction-age ][set size 2]
 end
 ; end setup human agents ----------------------------
 
@@ -544,7 +539,7 @@ setup-age
 setup-age
 0
 100
-30.0
+20.0
 1
 1
 NIL
@@ -574,7 +569,7 @@ reproduction-age
 reproduction-age
 0
 100
-4.0
+2.0
 1
 1
 NIL
@@ -589,7 +584,7 @@ maximum-age
 maximum-age
 0
 100
-70.0
+25.0
 1
 1
 NIL
@@ -619,7 +614,7 @@ initial-number-humans
 initial-number-humans
 0
 50
-10.0
+11.0
 1
 1
 NIL
