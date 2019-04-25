@@ -136,7 +136,7 @@ to reproduce-humans ;MNM
   ]
   if Tactics = "Step4" [
     ;check family and then set hatched parents to current
-    ask humans with [color = pink and age >= reproduction-age and age > latest-birth] [
+    ask humans with [color = pink and age >= reproduction-age and age > latest-birth and nrOfChildren < maximumNrOfChildren] [
       let man one-of humans-here with [color = blue and age >= reproduction-age]
       if man != nobody [
         let manP 0
@@ -156,6 +156,7 @@ to reproduce-humans ;MNM
             right random 360
             forward 1
           ]
+          set nrOfChildren (nrOfChildren + 1)
         ]
       ]
     ]
@@ -163,7 +164,7 @@ to reproduce-humans ;MNM
 
 end
 
-to-report family[maleP femaleP];TO BE IMPLEMENTED (FAMILY TREE) MNM & AKB
+to-report family[maleP femaleP] ;MNM & AKB
 ;  show "MALE"
 ;  show maleP
 ;  show "FEMALE"
@@ -618,7 +619,7 @@ initial-number-humans
 initial-number-humans
 0
 50
-6.0
+10.0
 1
 1
 NIL
@@ -754,6 +755,21 @@ G
 NIL
 NIL
 0
+
+SLIDER
+676
+71
+848
+104
+maximumNrOfChildren
+maximumNrOfChildren
+0
+15
+10.0
+1
+1
+NIL
+HORIZONTAL
 
 @#$#@#$#@
 ## WHAT IS IT?
