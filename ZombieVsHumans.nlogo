@@ -143,7 +143,7 @@ to reproduce-humans ;MNM
         let womanID who
         let femaleP 0
         set femaleP parents
-        if(family(manP)(femaleP) != 0) [
+        if(family(manP)(femaleP)(manID)(womanID) != 0) [
           hatch random 3 [
             ifelse random 2 = 0 [set color pink] [set color blue]
             set age 0
@@ -159,20 +159,20 @@ to reproduce-humans ;MNM
 
 end
 
-to-report family[maleP femaleP] ;MNM & AKB
+to-report family[maleP femaleP maleID femaleID] ;MNM & AKB
 ;  show "MALE"
 ;  show maleP
 ;  show "FEMALE"
 ;  show femaleP
   if (item 0 maleP = -1 and item 1 maleP = -1) or (item 0 femaleP = -1 and item 1 femaleP = -1) [
-    show "initial humans, breed"
+    ;show "initial humans, breed"
     report 1 ;Initial humans, allowed to breed
   ]
-  ifelse (item 0 maleP = item 0 femaleP) or (item 1 maleP = item 1 femaleP)[
-    show "same parents, don't breed"
+  ifelse (item 0 maleP = item 0 femaleP) or (item 1 maleP = item 1 femaleP) or (femaleID = item 0 maleP) or (maleID = item 1 femaleP)[
+    ;show "same parents, don't breed"
     report 0 ;same parents don't breed
   ] [
-    show "diffrent parents, allowed to breed"
+    ;show "diffrent parents, allowed to breed"
     report 1 ;diffrent parents, allowed to breed
   ]
 end
