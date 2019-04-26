@@ -112,7 +112,7 @@ to year-counter ;MNM
     set age-counter 0
     ask humans [
       set age (age + 1)
-      if age >= (maximum-age + (random 10) - (random 10)) [ die ]
+      if age >= (maximum-age + (random 5) - (random 5)) [ die ]
     ]
     ask humans with [size < 2] [set size (size + 0.1) ]
   ]
@@ -174,18 +174,16 @@ to-report family[maleP femaleP maleID femaleID] ;MNM & AKB
     report 1 ;Initial humans, allowed to breed
   ]
   ifelse (item 0 maleP = item 0 femaleP) or (item 1 maleP = item 1 femaleP) or (femaleID = item 0 maleP) or (maleID = item 1 femaleP)[
-    ;show "same parents, don't breed"
+    show "same parents, don't breed"
     report 0 ;same parents don't breed
   ] [
-    ;show "diffrent parents, allowed to breed"
+    show "diffrent parents, allowed to breed"
     report 1 ;diffrent parents, allowed to breed
   ]
 end
 
 to-report zombInArea[person] ; Return whether there is a zombie, human or both nearby. DAB & MNM
-
   let zomb min-one-of zombies in-radius vision-radius [distance human person]
-
   if zomb != nobody [
     report zomb
   ]
@@ -544,7 +542,7 @@ setup-age
 setup-age
 0
 100
-30.0
+10.0
 1
 1
 NIL
@@ -574,7 +572,7 @@ reproduction-age
 reproduction-age
 0
 100
-4.0
+2.0
 1
 1
 NIL
@@ -589,7 +587,7 @@ maximum-age
 maximum-age
 0
 100
-70.0
+25.0
 1
 1
 NIL
