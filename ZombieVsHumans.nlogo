@@ -50,12 +50,45 @@ to go
   live-zombies
   tick
 
+  ;common functions and stop-expressions
+  year-counter
+  set-night-day
   if count humans > 200 [stop]
   if count zombies > 200 [stop]
 
 end
 ; **************************
 
+; ******************* COMMON FUNCTIONS PART ********
+;Functions shared between zombies and humans
+to set-night-day  ;JOD & MNM
+  let counter ticks mod ticks-per-day-night
+  if (counter < floor((ticks-per-day-night / 2))) [
+    show "day"
+    set timeOfDay "day"
+    ask patches with [pcolor = black] [set pcolor yellow]
+  ]
+  if (counter > floor((ticks-per-day-night / 2))+ 1) [
+    show "night"
+    set timeOfDay "night"
+    ask patches with [pcolor = yellow] [set pcolor black]
+  ]
+end
+
+to year-counter ;MNM
+  set age-counter (age-counter + 1)
+  if (age-counter = ticks-per-year) [
+    set age-counter 0
+    ask humans [
+      set age (age + 1)
+      if age >= (maximum-age + (random 5) - (random 5)) [ die ]
+    ]
+    ask humans with [size < 2] [set size (size + 0.1) ]
+  ]
+end
+
+
+; **************************
 
 ; ****************** HUMAN AGENTS PART **************
 ;
@@ -93,7 +126,6 @@ end
 ; --human agents main function ----------------------
 to live-humans
   ask humans [ifelse show-age [set label age] [set label ""]]
-  year-counter
   ;move-humans
   change-state
   reproduce-humans
@@ -101,18 +133,6 @@ end
 ; end human agents main function --------------------
 
 ; --human agents procedures/reporters ----------------
-to year-counter ;MNM
-  set age-counter (age-counter + 1)
-  if (age-counter = ticks-per-year) [
-    set age-counter 0
-    ask humans [
-      set age (age + 1)
-      if age >= (maximum-age + (random 5) - (random 5)) [ die ]
-    ]
-    ask humans with [size < 2] [set size (size + 0.1) ]
-  ]
-end
-
 ; <3-digit initial of programmer for each procedure>
 to reproduce-humans ;MNM
   if Tactics = "Step3" [
@@ -505,18 +525,7 @@ to eat-human
   ]
 end
 
-;JOD
-to set-night-day
-  let counter ticks mod 100
-  if (counter < 49) [
-    show "day"
-    set timeOfDay "day"
-  ]
-  if (counter > 50) [
-    show "night"
-    set timeOfDay "night"
-  ]
-end
+
 
 ;CVLA
 ;to communicate
@@ -588,9 +597,9 @@ ticks
 30.0
 
 SLIDER
-8
+674
 27
-180
+846
 60
 setup-age
 setup-age
@@ -603,10 +612,10 @@ NIL
 HORIZONTAL
 
 SLIDER
-10
-78
-182
-111
+17
+250
+189
+283
 ticks-per-year
 ticks-per-year
 0
@@ -618,10 +627,10 @@ NIL
 HORIZONTAL
 
 SLIDER
-10
-134
-182
-167
+674
+181
+846
+214
 reproduction-age
 reproduction-age
 0
@@ -633,10 +642,10 @@ NIL
 HORIZONTAL
 
 SLIDER
-15
-197
-187
-230
+676
+64
+848
+97
 maximum-age
 maximum-age
 0
@@ -648,10 +657,10 @@ NIL
 HORIZONTAL
 
 SLIDER
-19
-259
-191
-292
+18
+212
+190
+245
 vision-radius
 vision-radius
 0
@@ -663,10 +672,10 @@ NIL
 HORIZONTAL
 
 SLIDER
-20
-330
-192
-363
+18
+87
+190
+120
 initial-number-humans
 initial-number-humans
 0
@@ -678,10 +687,10 @@ NIL
 HORIZONTAL
 
 SLIDER
-27
-382
-199
-415
+19
+126
+191
+159
 initial-number-zombies
 initial-number-zombies
 1
@@ -693,10 +702,10 @@ NIL
 HORIZONTAL
 
 SLIDER
-24
-431
-196
-464
+870
+66
+1042
+99
 zombies-energy-gain
 zombies-energy-gain
 0
@@ -708,10 +717,10 @@ NIL
 HORIZONTAL
 
 SLIDER
-677
-29
-849
-62
+868
+28
+1040
+61
 energy-start-zombies
 energy-start-zombies
 0
@@ -723,10 +732,10 @@ NIL
 HORIZONTAL
 
 SWITCH
-691
-112
-802
-145
+676
+103
+787
+136
 Show-age
 Show-age
 0
@@ -734,20 +743,20 @@ Show-age
 -1000
 
 CHOOSER
-976
-43
-1114
-88
+18
+163
+156
+208
 Tactics
 Tactics
 "Step2" "Step3" "Step4"
 1
 
 SWITCH
-1033
-212
-1168
-245
+869
+101
+1004
+134
 Show-energy?
 Show-energy?
 0
@@ -755,11 +764,11 @@ Show-energy?
 -1000
 
 PLOT
-767
-251
-967
-401
-plot 1
+678
+236
+1044
+441
+Population
 NIL
 NIL
 0.0
@@ -775,10 +784,10 @@ PENS
 "Men" 1.0 0 -14070903 true "" "plot count humans with [color = blue]"
 
 BUTTON
-59
-494
-122
-527
+18
+51
+81
+84
 NIL
 setup
 NIL
@@ -792,10 +801,10 @@ NIL
 1
 
 BUTTON
-139
-493
-202
-526
+89
+50
+152
+83
 NIL
 go
 T
@@ -809,10 +818,10 @@ NIL
 0
 
 SLIDER
-676
-71
-848
-104
+674
+141
+846
+174
 maximumNrOfChildren
 maximumNrOfChildren
 0
@@ -824,10 +833,10 @@ NIL
 HORIZONTAL
 
 SLIDER
-681
-171
-853
-204
+868
+142
+1040
+175
 zombie-speed-max
 zombie-speed-max
 0
@@ -839,10 +848,10 @@ NIL
 HORIZONTAL
 
 SLIDER
-679
-212
-851
-245
+866
+183
+1038
+216
 zombie-speed-min
 zombie-speed-min
 0
@@ -852,6 +861,51 @@ zombie-speed-min
 1
 NIL
 HORIZONTAL
+
+TEXTBOX
+22
+32
+172
+50
+Commons
+11
+0.0
+1
+
+SLIDER
+18
+289
+190
+322
+ticks-per-day-night
+ticks-per-day-night
+0
+100
+20.0
+1
+1
+NIL
+HORIZONTAL
+
+TEXTBOX
+868
+10
+1018
+28
+Zombies\n
+11
+0.0
+1
+
+TEXTBOX
+674
+10
+824
+28
+Humans\n
+11
+0.0
+1
 
 @#$#@#$#@
 ## WHAT IS IT?
