@@ -11,7 +11,7 @@
 
 
 ; ************* GLOBAL VARIABLES *****************
-globals [age-counter]
+globals [age-counter timeofday]
 
 ; *****************************
 
@@ -25,7 +25,7 @@ breed [ humans human ]
 
 ; ************* AGENT-SPECIFIC VARIABLES *********
 turtles-own []
-zombies-own [energy target]
+zombies-own [energy target speedcoefficient]
 humans-own [latest-birth age parents nrOfChildren HState]
 
 ; ***************************
@@ -60,7 +60,7 @@ end
 ; ****************** HUMAN AGENTS PART **************
 ;
 ; --setup human agents --------------------------------
-to setup-humans ;MNM
+to setup-humans ;MNM & AKB & AJA
   set age-counter 0
   create-humans (initial-number-humans / 2)
   [
@@ -71,10 +71,6 @@ to setup-humans ;MNM
     set parents [-1 -1]
     ;set size 2  ; easier to see
     setxy random-xcor random-ycor
-
-    ask humans with [age < 10][set size 1]
-    ask humans with [age >= 10 and age < 15][set size 1.5]
-    ask humans with [age >= 15 ][set size 2]
   ]
   create-humans (initial-number-humans / 2)
   [
@@ -87,11 +83,10 @@ to setup-humans ;MNM
     set parents [-1 -1]
     ;set size 2  ; easier to see
     setxy random-xcor random-ycor
-
-    ask humans with [age < 10][set size 1]
-    ask humans with [age >= 10 and age < 15][set size 1.5]
-    ask humans with [age >= 15 ][set size 2]
   ]
+    ask humans with [age < 2 * reproduction-age][set size 1]
+    ask humans with [age >= 2 * reproduction-age and age < 5 * reproduction-age][set size 1.5]
+    ask humans with [age >= 5 * reproduction-age ][set size 2]
 end
 ; end setup human agents ----------------------------
 
@@ -225,11 +220,6 @@ to move-humans ;MNM
     ;[ set label age ]
     ;[ set label "" ]
 
-      ;Show age
-;      ifelse show-age
-;      [ set label age ]
-;      [ set label "" ]
-
   ]
   if Tactics = "Step3" [
     ask humans [
@@ -330,7 +320,7 @@ end
 ; **************************
 
 ; #################################################################################################################
-; **************** ZOMBIE AGENTS PART ************
+; ************** ZOMBIE AGENTS PART **********
 ;
 ; --setup zombie agents --------------------------------
 to setup-zombies
@@ -339,6 +329,7 @@ to setup-zombies
     set color red
     set size 3  ; easier to see
     set energy energy-start-zombies
+    set speedcoefficient (zombie-speed-max - zombie-speed-min) / ln(101)
     setxy random-xcor random-ycor
   ]
 end
@@ -348,12 +339,12 @@ end
 
 ; end setup zombie agents ----------------------------
 
+;JOD
 to move-zombies[State]
-  ;;State random tactics
+  ;State Step2 is used for first test. Zombies move in a random path with a 90
+  ;rotation radius, 45 right 45 left. Speed is determined by owned energy.
   if State = "Step2" [
     ask zombies [
-      ;;Random heading and move forward based on energy
-
       if energy > 0 [
         right random 45
         left random 45
@@ -365,119 +356,182 @@ to move-zombies[State]
         left random 45
         forward 0.6
       ]
-      ;;Show energy
-      ifelse show-energy?
-      [ set label energy ]
-      [ set label "" ]
+      show-energy
     ]
     eat-human
   ]
 
-  ;;State Follow tactics
+  ;State Step3 is used for second test. Zombies follows a human that is in its visual radius defined by a slider in the UI.
+  ;While it sees the target it faces it and hunts it othervise it looks for a new target to hunt while moving in a random pattern to "trick" the humans.
+  ;Speed is determined by energy where min speed is defined as 0.5 steps forward and max is 1.
   if State = "Step3"[
     if not any? humans [stop]
     ask zombies [
+      set target min-one-of humans in-radius vision-radius [distance myself]
+      if(target != nobody) [
+        face target
 
+      ]
       ;;Only move if you have energy
 
       ;;Check if zombie has a target otherwise set target to be the closest human
       set target min-one-of humans in-radius vision-radius [distance myself]
       if(target != nobody) [
         face target
-      ]
-      if energy > 99 [
-        forward 1
-        set energy energy - 1
-      ]
-      if energy <= 40 [
-        forward 0.4
-      ]
-      if energy < 100 and energy > 40 [
-        forward energy / 100
-        set energy energy - 1
+
       ]
 
-      ;;Show energy
-      ;ifelse show-energy?
-      ;[ set label energy ]
-      ;[ set label "" ]
+      if(target = nobody) [
+        right random 45
+        left random 45
+
+        if energy < 1 [
+          forward zombie-speed-min
+        ]
+
+        ;Show energy
+        show-energy
+      ]
+      alert
+      release-zombie
+      eat-human
+      set-speed
+      ;communicate
+
     ]
-    eat-human
   ]
+end
+
+;JOD
+to show-energy
+  ifelse show-energy?
+      [ set label energy ]
+  [ set label "" ]
+end
+
+; OEA
+; CVLA
+to alert
+  let hum count humans in-radius vision-radius
+  let zomVisionRadius count zombies in-radius vision-radius
+  let zom count zombies in-radius 1
+
+
+  if(((hum / zom) >= 3)) [
+
+    if(((hum / zomVisionRadius) < 3)) [
+      set target min-one-of zombies in-radius vision-radius [distance myself]
+      ask zombies in-radius vision-radius[
+
+          face myself
+          set pcolor blue
+
+      ]
+      if(target != zombies-here)[
+        face target
+      ]
+      set pcolor orange
+    ]
+
+    if(((hum / zomVisionRadius) >= 3))[
+      if(zomVisionRadius >= 2) [
+        set target min-one-of zombies in-radius vision-radius [distance myself]
+        face target
+        set pcolor red
+      ]
+      if(zomVisionRadius = 1) [
+        set heading heading - 180
+        set pcolor green
+      ]
+    ]
+  ]
+  set-speed
+end
+
+;JOD
+to release-zombie
+  let hum count humans in-radius 1
+  let zom count zombies in-radius 1
+  if(((hum / zom) >= 3)) [
+    ask zombies-here [die]
+  ]
+end
+
+;JOD
+to set-speed
+  if energy > 100 [
+    forward zombie-speed-max
+    set energy energy - 1
+  ]
+
+  if energy <= 100 and energy >= 0 [
+    forward speedcoefficient * ln(energy + 1) + zombie-speed-min
+    set energy energy - 1
+    if energy < 0 [
+      set energy 0
+    ]
+  ]
+  ;  if energy > 59 [
+  ;    forward 0.6
+  ;    set energy energy - 0.6
+  ;  ]
+  ;  if energy <= 50 [
+  ;    forward 0.5
+  ;    set energy energy - 0.5
+  ;  ]
+  ;  if energy < 60 and energy > 40 [
+  ;    forward energy / 100
+  ;    set energy energy - (energy / 100)
+  ;  ]
 
 end
 
+;JOD
 to eat-human
   ask zombies [
-    if any? other humans-here [
-      hatch-zombies count humans-here [
+    let hum one-of humans-here
+    if(hum != nobody)[
+      hatch-zombies 1[
+        ask hum [die]
         set shape "zombie"
         set size 3
         set energy energy-start-zombies
       ]
-      ask humans-here [die]
       set energy energy + zombies-energy-gain
+      if energy > 100 [
+        set energy 100
+      ]
     ]
-    set target nobody
   ]
 end
+
+;JOD
+to set-night-day
+  let counter ticks mod 100
+  if (counter < 49) [
+    show "day"
+    set timeOfDay "day"
+  ]
+  if (counter > 50) [
+    show "night"
+    set timeOfDay "night"
+  ]
+end
+
+;CVLA
+;to communicate
+;  ask zombies in-radius vision-radius with [target = [target] of myself][
+;    create-links-with other zombies-here [
+;         set color white
+;      ]
+;  ]
+;end
 
 ; --zombie agents main function ----------------------
 to live-zombies
   ; <3-digit initial of programmer for each subfunction of the agent>
   move-zombies(Tactics)
 end
-; end zombie agents main function -------------------
-;to setup-zombies
-;  create-zombies initial-number-zombies
-;  [
-;    set shape "zombie"
-;    set color red
-;    set size 3  ; easier to see
-;    setxy random-xcor random-ycor
-;    set energy random (2 * zombies-energy-gain)
-;  ]
-;end
-;; end setup zombie agents ----------------------------
-;
-;; --zombie agents main function ----------------------
-;to live-zombies
-;; <3-digit initial of programmer for each subfunction of the agent>
-;  ;TEMP TESTFUNCTIONS
-;  move-zombies ; MNM
-;  eat-humans
-;end
-;; end zombie agents main function --------------------
-;
-;; --zombie agents procedures/reporters ----------------
-;; <3-digit initial of programmer for each procedure>
-;to move-zombies ;temp. testfunction MNM
-;  ask zombies [
-;    set energy energy - 1
-;    right random 50
-;    left random 50
-;    if energy > 0 [ forward 1]
-;  ]
-;end
-;
-;to eat-humans
-;  ask zombies [
-;    let prey one-of humans-here
-;    if prey != nobody [
-;      ask prey [die]
-;      hatch 1 [
-;        set shape "zombie"
-;        set color red
-;        set size 3  ; easier to see
-;        set energy random (2 * zombies-energy-gain)
-;      ]
-;      set energy energy + zombies-energy-gain
-;    ]
-;  ]
-;end
-; end zombie agents procedures/reporters -------------
-
-; **************************
 
 ; #################################################################################################################
 ; Programmers:
@@ -542,7 +596,7 @@ setup-age
 setup-age
 0
 100
-10.0
+20.0
 1
 1
 NIL
@@ -617,7 +671,7 @@ initial-number-humans
 initial-number-humans
 0
 50
-10.0
+11.0
 1
 1
 NIL
@@ -687,7 +741,7 @@ CHOOSER
 Tactics
 Tactics
 "Step2" "Step3" "Step4"
-2
+1
 
 SWITCH
 1033
@@ -765,6 +819,36 @@ maximumNrOfChildren
 15
 10.0
 1
+1
+NIL
+HORIZONTAL
+
+SLIDER
+681
+171
+853
+204
+zombie-speed-max
+zombie-speed-max
+0
+1
+0.6
+0.01
+1
+NIL
+HORIZONTAL
+
+SLIDER
+679
+212
+851
+245
+zombie-speed-min
+zombie-speed-min
+0
+1
+0.2
+0.01
 1
 NIL
 HORIZONTAL
