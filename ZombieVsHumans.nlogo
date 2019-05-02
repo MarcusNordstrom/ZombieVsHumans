@@ -585,7 +585,7 @@ to alert
     ;Den här koden låter oss inte hitta ett annat target om det behövs
     if(target != nobody)[
       face target
-      show target
+      ;show target
       ask target [
         face myself
         ;set pcolor blue
@@ -804,7 +804,7 @@ setup-age
 setup-age
 0
 100
-5.0
+10.0
 1
 1
 NIL
