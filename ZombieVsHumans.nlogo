@@ -38,7 +38,7 @@ to setup
   setup-humans
   setup-zombies
   ; set the bakground to yellow
-  ask patches [set pcolor yellow]
+  ask patches [set pcolor grey]
   reset-ticks
 end
 ; **************************
@@ -66,16 +66,16 @@ to set-night-day  ;JOD & MNM
   if (counter < floor((ticks-per-day-night / 2))) [
     ;show "day"
     set timeOfDay "day"
-    ask patches with [pcolor = black] [set pcolor yellow]
+    ask patches with [pcolor = black] [set pcolor grey]
   ]
   if (counter > floor((ticks-per-day-night / 2))+ 1) [
     ;show "night"
     set timeOfDay "night"
-    ask patches with [pcolor = yellow] [set pcolor black]
+    ask patches with [pcolor = grey] [set pcolor black]
   ]
 end
 
-to year-counter ;MNM
+to year-counter ;MNM & AKB
   set age-counter (age-counter + 1)
   if (age-counter = ticks-per-year) [
     set age-counter 0
@@ -126,7 +126,7 @@ end
 ; end setup human agents ----------------------------
 
 ; --human agents main function ----------------------
-to live-humans
+to live-humans ; AKB
   ask humans [ifelse show-age [set label age] [set label ""]]
   ;move-humans
   change-state
@@ -136,7 +136,7 @@ end
 
 ; --human agents procedures/reporters ----------------
 ; <3-digit initial of programmer for each procedure>
-to reproduce-humans ;MNM
+to reproduce-humans ;MNM & AKB
   if Tactics = "Step3" [
     ask humans with [color = pink and age >= reproduction-age and age > latest-birth] [
       if any? humans-here with [color = blue] [
@@ -169,6 +169,7 @@ to reproduce-humans ;MNM
           hatch random 3 [
             ifelse random 2 = 0 [set color pink] [set color blue]
             set age 0
+            set size 1
             set parents list (womanID) (manID)
             right random 360
             forward 1
@@ -594,8 +595,10 @@ to alert
           if(target != nobody) [
             ifelse((([distance myself] of target) < ([distance myself] of zomToHelp)) and (energy > 0))[
               face target
+              set pcolor blue
             ][
               face zomToHelp
+              set pcolor orange
             ]
           ]
           if(target = nobody) [
@@ -609,12 +612,12 @@ to alert
       if(zomVisionRadius >= 2) [ ;Finns inte tillräckligt med zombies för att hjälpa
         if target != nobody [ ;Tänkt att låta oss se target, men triggas inte. Vore bra för proaktivt tänkande
           face target
-          ;set pcolor red
+          set pcolor brown
         ]
       ]
       if(zomVisionRadius = 1) [ ;Finns inte någon zombie som kan hjälpa
         set heading heading - 180
-        ;set pcolor green
+        set pcolor green
       ]
     ]
   ]
@@ -666,9 +669,9 @@ to eat-human
             ask hum [die]
             set size 3
             set energy energy-start-zombies
-            set eatTimer 4
+            set eatTimer eatingTime + 1
           ]
-          set eatTimer 4
+          set eatTimer eatingTime + 1
 
           set energy energy + zombies-energy-gain
           if energy > 100 [
@@ -809,7 +812,7 @@ setup-age
 setup-age
 0
 100
-10.0
+9.0
 1
 1
 NIL
@@ -899,7 +902,7 @@ initial-number-zombies
 initial-number-zombies
 0
 50
-10.0
+5.0
 1
 1
 NIL
@@ -929,7 +932,7 @@ energy-start-zombies
 energy-start-zombies
 0
 200
-50.0
+80.0
 1
 1
 NIL
@@ -942,7 +945,7 @@ SWITCH
 136
 Show-age
 Show-age
-1
+0
 1
 -1000
 
@@ -963,15 +966,15 @@ SWITCH
 134
 Show-energy?
 Show-energy?
-1
+0
 1
 -1000
 
 PLOT
-1117
-236
-1483
-441
+1087
+309
+1387
+527
 Population
 NIL
 NIL
@@ -986,6 +989,7 @@ PENS
 "Zombies" 1.0 0 -13840069 true "" "plot count zombies"
 "Women" 1.0 0 -2064490 true "" "plot count humans with [color = pink]"
 "Men" 1.0 0 -14070903 true "" "plot count humans with [color = blue]"
+"pen-3" 1.0 0 -7500403 true "" "plot count humans"
 
 BUTTON
 18
@@ -1045,7 +1049,7 @@ zombie-speed-max
 zombie-speed-max
 0
 1
-0.7
+0.75
 0.01
 1
 NIL
@@ -1060,7 +1064,7 @@ zombie-speed-min
 zombie-speed-min
 0
 1
-0.2
+0.5
 0.01
 1
 NIL
@@ -1127,6 +1131,21 @@ F
 NIL
 NIL
 1
+
+SLIDER
+1307
+222
+1479
+255
+eatingTime
+eatingTime
+0
+10
+10.0
+1
+1
+NIL
+HORIZONTAL
 
 @#$#@#$#@
 ## WHAT IS IT?
