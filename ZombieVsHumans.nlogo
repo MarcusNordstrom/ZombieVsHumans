@@ -445,8 +445,10 @@ to mergeGroups[group-List1 group-List2]
   ]
   foreach newlist[ n ->
     if n != -1[
-      ask turtle n[
-        set my-group newlist
+      if( turtle n != nobody)[
+        ask turtle n[
+          set my-group newlist
+        ]
       ]
     ]
   ]
@@ -834,7 +836,7 @@ reproduction-age
 reproduction-age
 0
 100
-4.0
+5.0
 1
 1
 NIL
@@ -879,7 +881,7 @@ initial-number-humans
 initial-number-humans
 0
 50
-12.0
+20.0
 1
 1
 NIL
@@ -894,7 +896,7 @@ initial-number-zombies
 initial-number-zombies
 0
 50
-6.0
+10.0
 1
 1
 NIL
@@ -1055,7 +1057,7 @@ zombie-speed-min
 zombie-speed-min
 0
 1
-0.3
+0.2
 0.01
 1
 NIL
