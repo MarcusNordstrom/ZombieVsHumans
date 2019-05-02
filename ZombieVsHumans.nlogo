@@ -26,7 +26,7 @@ breed [ humans human ]
 ; ************* AGENT-SPECIFIC VARIABLES *********
 turtles-own []
 zombies-own [energy target speedcoefficient eatTimer myGroup inDanger]
-humans-own [latest-birth age parents nrOfChildren HState]
+humans-own [latest-birth age parents nrOfChildren HState my-group]
 
 ; ***************************
 
@@ -53,8 +53,8 @@ to go
   ;common functions and stop-expressions
   year-counter
   set-night-day
-  if count humans > 200 [stop]
-  if count zombies > 200 [stop]
+  if count humans > 500 [stop]
+  if count zombies > 500 [stop]
   if not any? humans [stop]
 end
 ; **************************
@@ -102,6 +102,7 @@ to setup-humans ;MNM & AKB & AJA
     set age random setup-age
     set HState "Wander"
     set parents [-1 -1]
+    set my-group (list who -1 -1 -1)
     ;set size 2  ; easier to see
     setxy random-xcor random-ycor
   ]
@@ -114,6 +115,7 @@ to setup-humans ;MNM & AKB & AJA
     set latest-birth 0
     set nrOfChildren 0
     set parents [-1 -1]
+    set my-group (list who -1 -1 -1)
     ;set size 2  ; easier to see
     setxy random-xcor random-ycor
   ]
@@ -330,9 +332,13 @@ to change-state ; MNM & DAB
 end
 
 to Group [person] ; MNM & DAB
-  set heading towards person
-  right random 5
-  left random 5
+;  set heading towards person
+;  right random 5
+;  left random 5
+  group-me
+  if groupSpotAvailiable(my-group) != 1[  ;; Go "home"
+    get-home
+  ]
   forward 1
 end
 to Flee [zomb] ; MNM & DAB
@@ -367,6 +373,115 @@ to Wander ; MNM & DAB
   right random 30
   left random 30
   forward 1
+end
+
+;SCN & BJZ
+to group-me
+  if (groupSpotAvailiable(my-group) > 0) [
+    let my-g my-group
+    let notMyGroup humans with[my-group != my-G]
+    let humansNear one-of other notMyGroup in-radius 6
+    let humanNear-EmptySpots 0
+    let humanNear-Group  0
+    if humansNear != nobody[
+      ask humansNear[
+        set humanNear-EmptySpots groupSpotAvailiable(my-group)
+        set humanNear-Group my-group
+      ]
+      if (4 - groupSpotAvailiable(my-group)) + (4 - humanNear-EmptySpots) <= 4 [
+        mergeGroups(my-group)(humanNear-Group)
+      ]
+    ]
+  ]
+end
+;SCN & BJZ
+to kill-me
+  if item 0 my-group = who[
+    set my-group replace-item 0 my-group item 1 my-group
+    set my-group replace-item 1 my-group item 2 my-group
+    set my-group replace-item 2 my-group item 3 my-group
+    set my-group replace-item 3 my-group -1
+  ]
+  if item 1 my-group = who[
+    set my-group replace-item 1 my-group item 2 my-group
+    set my-group replace-item 2 my-group item 3 my-group
+    set my-group replace-item 3 my-group -1
+  ]
+  if item 2 my-group = who[
+    set my-group replace-item 2 my-group item 3 my-group
+    set my-group replace-item 3 my-group -1
+  ]
+  if item 3 my-group = who[
+    set my-group replace-item 3 my-group -1
+  ]
+  let my-g my-group
+  foreach my-group[ n ->
+    if n != -1[
+      if( turtle n != nobody)[
+        ask turtle n[
+
+          set my-group my-g
+        ]
+      ]
+    ]
+  ]
+  die
+end
+;SCN & BJZ
+to mergeGroups[group-List1 group-List2]
+  let newList (list -1 -1 -1 -1)
+  let newListIndex  0
+  let itterator 3 - groupSpotAvailiable(group-List1)
+  while [itterator >= 0][
+    set newList replace-item newListIndex newList item itterator group-List1
+    set itterator itterator - 1
+    set newListIndex newListIndex + 1
+  ]
+  set itterator 3 - groupSpotAvailiable(group-List2)
+  while [itterator >= 0][
+    set newList replace-item newListIndex newList item itterator group-List2
+    set itterator itterator - 1
+    set newListIndex newListIndex + 1
+  ]
+  foreach newlist[ n ->
+    if n != -1[
+      ask turtle n[
+        set my-group newlist
+      ]
+    ]
+  ]
+end
+;SCN & BJZ
+to-report groupSpotAvailiable[group-list]
+  let emptySpots 0
+  if item 0 group-list = -1[
+    set emptySpots emptySpots + 1
+  ]
+  if item 1 group-list = -1[
+    set emptySpots emptySpots + 1
+  ]
+  if item 2 group-list = -1[
+    set emptySpots emptySpots + 1
+  ]
+  if item 3 group-list = -1[
+    set emptySpots emptySpots + 1
+  ]
+  report emptySpots
+end
+;SCN & BJZ
+;; Group the turtles in the patch
+to get-home
+  let my-g my-group
+  let Hgroup humans with [my-group = my-g]
+  let person item 0 my-g
+  if turtle person != nobody[
+    face turtle person
+    ask turtle person[
+    rt random 100
+    lt random 100
+  ]
+  ]
+
 end
 ; end human agents procedures/reporters -------------
 
@@ -538,7 +653,9 @@ to eat-human
       if (eatTimer = 0) [
         if(hum != nobody)[
           hatch-zombies 1[
-            ask hum [die]
+            ask hum [
+              kill-me
+            ]
             set size 3
             set energy energy-start-zombies
             set eatTimer 4
@@ -717,7 +834,7 @@ reproduction-age
 reproduction-age
 0
 100
-2.0
+4.0
 1
 1
 NIL
@@ -762,7 +879,7 @@ initial-number-humans
 initial-number-humans
 0
 50
-30.0
+12.0
 1
 1
 NIL
@@ -777,7 +894,7 @@ initial-number-zombies
 initial-number-zombies
 0
 50
-5.0
+6.0
 1
 1
 NIL
@@ -908,7 +1025,7 @@ maximumNrOfChildren
 maximumNrOfChildren
 0
 15
-10.0
+5.0
 1
 1
 NIL
@@ -938,7 +1055,7 @@ zombie-speed-min
 zombie-speed-min
 0
 1
-0.2
+0.3
 0.01
 1
 NIL
