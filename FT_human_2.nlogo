@@ -1,11 +1,11 @@
-globals [max-humans] ;set maximum numbers of humans
+globals [max-humans groupedC] ;set maximum numbers of humans
 
 breed [ humans human ] ; Human and
 breed [ zombies zombie ] ; zombies are breed of turtles.
 breed [ kids kid ] ; Humans kid
 
 humans-own [
-  gender          ; 1 = make, 2 = female
+  gender          ; 1 = male, 2 = female
   my-group        ; group number the turtles belong to
 ]
 
@@ -13,70 +13,165 @@ humans-own [
 
 to setup
   ca
+  let x-lineup 0
+  let y-lineup 0
+  set groupedC 10
   ;ask patches [ set pcolor green]
   create-humans  initial-number-humans;create nbr of human by the slider
   [
-  set color red
-  set shape "person"
-  setxy random-xcor random-ycor
-  set my-group -1
+    set color red
+    set shape "person"
+    ;setxy (x-lineup mod 10) y-lineup
+    setxy random-xcor random-ycor
+    set my-group (list who -1 -1 -1)
+    set x-lineup ( x-lineup + 1 )
+    set y-lineup floor ( x-lineup / 10)
   ]
-  ask n-of (count humans / 2) humans [set color blue]
   reset-ticks
 end
 
 to go
-  ask humans
-  [
-    if my-group != -1  ;; Go "home"
-     [ face get-home ]
-    lt random 5
-    rt random 5
-    fd 0.5
+  ask humans[
+    group-me
+    if groupSpotAvailiable(my-group) != 1[  ;; Go "home"
+        get-home
+    ]
+    fd 1
+    rt random 45
+    lt random 45
+
   ]
   ;if not any? humans [stop]
   ;if not any? zombies [stop]
-
   tick
 end
 
-to assign-by-size ; button on interface for assign group by size
-  ask humans [ set my-group -1 ]
-  let unassigned humans
-
-  ;; start with group 0 and loop to build each group
-  let current 0
-  while [any? unassigned]
-  [
-    ask n-of (min (list group-size (count unassigned))) unassigned
-      [ set my-group current ]
-    set current current + 1
-    set unassigned unassigned with [my-group = -1]
+to group-me
+    if (groupSpotAvailiable(my-group) > 0) [
+    let my-g my-group
+    let notMyGroup humans with[my-group != my-G]
+      let humansNear one-of other notMyGroup in-radius 6
+      let humanNear-EmptySpots 0
+      let humanNear-Group  0
+    if humansNear != nobody[
+      ask humansNear[
+        set humanNear-EmptySpots groupSpotAvailiable(my-group)
+        set humanNear-Group my-group
+      ]
+      if (4 - groupSpotAvailiable(my-group)) + (4 - humanNear-EmptySpots) <= 4 [
+        mergeGroups(my-group)(humanNear-Group)
+      ]
+    ]
   ]
 end
 
-;; Group the turtles in the patch
-to-report get-home
-  let side ceiling (sqrt (max [my-group] of turtles + 1))
+to kill-me
+  if item 0 my-group = who[
+    set my-group replace-item 0 my-group item 1 my-group
+    set my-group replace-item 1 my-group item 2 my-group
+    set my-group replace-item 2 my-group item 3 my-group
+    set my-group replace-item 3 my-group -1
+  ]
+  if item 1 my-group = who[
+    set my-group replace-item 1 my-group item 2 my-group
+    set my-group replace-item 2 my-group item 3 my-group
+    set my-group replace-item 3 my-group -1
+  ]
+  if item 2 my-group = who[
+    set my-group replace-item 2 my-group item 3 my-group
+    set my-group replace-item 3 my-group -1
+  ]
+  if item 3 my-group = who[
+    set my-group replace-item 3 my-group -1
+  ]
+  let my-g my-group
+  let groupColor random 255
+  foreach my-group[ n ->
+    if n != -1[
+      ask turtle n[
+        set my-group my-g
+        set color groupColor
+      ]
+    ]
+  ]
+end
 
-  report patch
-           ;; compute the x coordinate
-           (round ((world-width / side) * (my-group mod side)
-             + min-pxcor + int (world-width / (side * 2))))
-           ;; compute the y coordinate
-           (round ((world-height / side) * int (my-group / side)
-             + min-pycor + int (world-height / (side * 2))))
+to mergeGroups[group-List1 group-List2]
+  let newList (list -1 -1 -1 -1)
+  let newListIndex  0
+  let itterator 3 - groupSpotAvailiable(group-List1)
+  while [itterator >= 0][
+    set newList replace-item newListIndex newList item itterator group-List1
+    set itterator itterator - 1
+    set newListIndex newListIndex + 1
+  ]
+  set itterator 3 - groupSpotAvailiable(group-List2)
+  while [itterator >= 0][
+    set newList replace-item newListIndex newList item itterator group-List2
+    set itterator itterator - 1
+    set newListIndex newListIndex + 1
+  ]
+  let groupColor random 255
+  foreach newlist[ n ->
+    if n != -1[
+      ask turtle n[
+        set my-group newlist
+        set color groupColor
+      ]
+    ]
+  ]
+
+end
+
+to-report groupSpotAvailiable[group-list]
+  let emptySpots 0
+  if item 0 group-list = -1[
+   set emptySpots emptySpots + 1
+  ]
+  if item 1 group-list = -1[
+   set emptySpots emptySpots + 1
+  ]
+  if item 2 group-list = -1[
+   set emptySpots emptySpots + 1
+  ]
+  if item 3 group-list = -1[
+   set emptySpots emptySpots + 1
+  ]
+  report emptySpots
+end
+
+;; Group the turtles in the patch
+to get-home
+  let my-g my-group
+  let group humans with [my-group = my-g]
+  let person item 0 my-g
+  face turtle person
+  ask turtle person[
+    rt random 100
+    lt random 100
+  ]
+  ;let side ceiling (sqrt (max [my-group] of turtles + 1))
+
+  ;report patch
+  ;; compute the x coordinate
+;  (round ((world-width / side) * (my-group mod side)
+;    + min-pxcor + int (world-width / (side * 2))))
+;  ;; compute the y coordinate
+;  (round ((world-height / side) * int (my-group / side)
+;    + min-pycor + int (world-height / (side * 2))))
+
+
 
 end
 @#$#@#$#@
 GRAPHICS-WINDOW
-284
+211
 10
-721
-448
+844
+644
 -1
 -1
-13.0
+18.94
 1
 10
 1
@@ -105,7 +200,7 @@ initial-number-humans
 initial-number-humans
 0
 100
-50.0
+14.0
 1
 1
 NIL
@@ -161,10 +256,10 @@ NIL
 1
 
 MONITOR
-284
-453
-389
-498
+5
+190
+110
+235
 Nbr of humans
 count humans
 3
@@ -172,57 +267,15 @@ count humans
 11
 
 MONITOR
-284
-503
-392
-548
+5
+240
+113
+285
 Nbr of zombies
 count zombies
 3
 1
 11
-
-BUTTON
-11
-290
-136
-323
-NIL
-assign-by-size
-NIL
-1
-T
-OBSERVER
-NIL
-NIL
-NIL
-NIL
-1
-
-SLIDER
-11
-252
-183
-285
-group-size
-group-size
-1
-100
-8.0
-1
-1
-NIL
-HORIZONTAL
-
-TEXTBOX
-16
-192
-166
-248
-To group turtles into groups of a particular size, select the size and press assign-by-size.
-11
-0.0
-1
 
 @#$#@#$#@
 ## WHAT IS IT?
