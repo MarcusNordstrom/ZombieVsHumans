@@ -290,7 +290,8 @@ to change-state ; MNM & DAB
 
       ifelse zombInArea(who) != nobody [
         set HState "Flee"
-        Flee2(zombsInArea(who))
+        ;Flee2(zombsInArea(who))
+        Flee(zombInArea(who))
       ] [ifelse humanInArea(who) != nobody [
           set HState "Group"
           Group(humanInArea(who))
@@ -301,8 +302,8 @@ to change-state ; MNM & DAB
 
     [ifelse HState = "Flee" [
       ifelse zombInArea(who) != nobody [
-        Flee2(zombsInArea(who))
-
+        ;Flee2(zombsInArea(who))
+        Flee(zombInArea(who))
       ] [set HState "Wander"
         Wander]
 
@@ -312,8 +313,8 @@ to change-state ; MNM & DAB
         ifelse zombInArea(who) != nobody [
 
           set HState "Flee"
-          Flee2(zombsInArea(who))
-
+          ;Flee2(zombsInArea(who))
+          Flee(zombInArea(who))
 
         ] [ifelse humanInArea(who) != nobody [
             Group(humanInArea(who))
@@ -541,10 +542,10 @@ to eat-human
             set size 3
             set energy energy-start-zombies
             set eatTimer 4
-            show "new zombie cant eat"
+            ;show "new zombie cant eat"
           ]
           set eatTimer 4
-          show "human eaten"
+          ;show "human eaten"
           set energy energy + zombies-energy-gain
           if energy > 100 [
             set energy 100
@@ -653,8 +654,8 @@ end
 GRAPHICS-WINDOW
 214
 10
-1075
-536
+1076
+537
 -1
 -1
 14.0
@@ -686,7 +687,7 @@ setup-age
 setup-age
 0
 100
-20.0
+5.0
 1
 1
 NIL
@@ -746,7 +747,7 @@ vision-radius
 vision-radius
 0
 10
-4.0
+5.0
 1
 1
 NIL
@@ -761,7 +762,7 @@ initial-number-humans
 initial-number-humans
 0
 50
-20.0
+30.0
 1
 1
 NIL
@@ -791,7 +792,7 @@ zombies-energy-gain
 zombies-energy-gain
 0
 100
-10.0
+20.0
 1
 1
 NIL
@@ -819,7 +820,7 @@ SWITCH
 136
 Show-age
 Show-age
-0
+1
 1
 -1000
 
@@ -840,7 +841,7 @@ SWITCH
 134
 Show-energy?
 Show-energy?
-0
+1
 1
 -1000
 
