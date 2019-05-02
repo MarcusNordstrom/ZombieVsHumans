@@ -25,7 +25,7 @@ breed [ humans human ]
 
 ; ************* AGENT-SPECIFIC VARIABLES *********
 turtles-own []
-zombies-own [energy target speedcoefficient]
+zombies-own [energy target speedcoefficient eatTimer myGroup inDanger]
 humans-own [latest-birth age parents nrOfChildren HState]
 
 ; ***************************
@@ -55,7 +55,7 @@ to go
   set-night-day
   if count humans > 200 [stop]
   if count zombies > 200 [stop]
-
+  if not any? humans [stop]
 end
 ; **************************
 
@@ -64,12 +64,12 @@ end
 to set-night-day  ;JOD & MNM
   let counter ticks mod ticks-per-day-night
   if (counter < floor((ticks-per-day-night / 2))) [
-    show "day"
+    ;show "day"
     set timeOfDay "day"
     ask patches with [pcolor = black] [set pcolor yellow]
   ]
   if (counter > floor((ticks-per-day-night / 2))+ 1) [
-    show "night"
+    ;show "night"
     set timeOfDay "night"
     ask patches with [pcolor = yellow] [set pcolor black]
   ]
@@ -189,10 +189,10 @@ to-report family[maleP femaleP maleID femaleID] ;MNM & AKB
     report 1 ;Initial humans, allowed to breed
   ]
   ifelse (item 0 maleP = item 0 femaleP) or (item 1 maleP = item 1 femaleP) or (femaleID = item 0 maleP) or (maleID = item 1 femaleP)[
-    show "same parents, don't breed"
+    ;show "same parents, don't breed"
     report 0 ;same parents don't breed
   ] [
-    show "diffrent parents, allowed to breed"
+    ;show "diffrent parents, allowed to breed"
     report 1 ;diffrent parents, allowed to breed
   ]
 end
@@ -204,7 +204,18 @@ to-report zombInArea[person] ; Return whether there is a zombie, human or both n
   ]
 
   report nobody
+end
 
+to-report zombsInArea[person] ; Return whether there is a zombies, human or both nearby. DAB & MNM
+  let zomb nobody
+  ask human person [
+    set zomb zombies in-radius vision-radius
+  ]
+  if zomb != nobody [
+    report zomb
+  ]
+
+  report nobody
 end
 
 to-report humanInArea[person] ; Return whether there is a zombie, human or both nearby. DAB & MNM
@@ -279,7 +290,7 @@ to change-state ; MNM & DAB
 
       ifelse zombInArea(who) != nobody [
         set HState "Flee"
-        Flee(zombInArea(who))
+        Flee2(zombsInArea(who))
       ] [ifelse humanInArea(who) != nobody [
           set HState "Group"
           Group(humanInArea(who))
@@ -290,7 +301,7 @@ to change-state ; MNM & DAB
 
     [ifelse HState = "Flee" [
       ifelse zombInArea(who) != nobody [
-        Flee(zombInArea(who))
+        Flee2(zombsInArea(who))
 
       ] [set HState "Wander"
         Wander]
@@ -301,7 +312,7 @@ to change-state ; MNM & DAB
         ifelse zombInArea(who) != nobody [
 
           set HState "Flee"
-          Flee(zombInArea(who))
+          Flee2(zombsInArea(who))
 
 
         ] [ifelse humanInArea(who) != nobody [
@@ -328,6 +339,27 @@ to Flee [zomb] ; MNM & DAB
   set heading towards zomb
   ;right 180
   right 160 + random 20
+  forward 1
+end
+to Flee2 [zombs] ; MNM
+  let x 0
+  let y 0
+  let c 1
+  ;show (word "myself x " xcor " y " ycor)
+  set zombs sort-on [(- distance myself)] zombs ;- distance myself to make the furthest zombie first
+  foreach zombs [ zomb ->
+    ask zomb [
+      set x (x + ( (c / 2) * xcor))
+      set y (y + ( (c / 2) * ycor))
+      set c (c + 1)
+      ;show (word "X " x " Y " y)
+    ]
+  ]
+  set x (x / c)
+  set y (y / c)
+  ;show (word "FINAL X " x " Y " y)
+  facexy x y
+  right 180
   forward 1
 end
 to Wander ; MNM & DAB
@@ -384,21 +416,11 @@ to move-zombies[State]
   ;State Step3 is used for second test. Zombies follows a human that is in its visual radius defined by a slider in the UI.
   ;While it sees the target it faces it and hunts it othervise it looks for a new target to hunt while moving in a random pattern to "trick" the humans.
   ;Speed is determined by energy where min speed is defined as 0.5 steps forward and max is 1.
-  if State = "Step3"[
-    if not any? humans [stop]
+  if State = "Step4"[
     ask zombies [
       set target min-one-of humans in-radius vision-radius [distance myself]
-      if(target != nobody) [
+      if(target != nobody and inDanger != 1) [
         face target
-
-      ]
-      ;;Only move if you have energy
-
-      ;;Check if zombie has a target otherwise set target to be the closest human
-      set target min-one-of humans in-radius vision-radius [distance myself]
-      if(target != nobody) [
-        face target
-
       ]
 
       if(target = nobody) [
@@ -409,9 +431,8 @@ to move-zombies[State]
           forward zombie-speed-min
         ]
 
-        ;Show energy
-        show-energy
       ]
+      show-energy
       alert
       release-zombie
       eat-human
@@ -431,44 +452,50 @@ end
 
 ; OEA
 ; CVLA
+; AAR
+;JOD
 to alert
-  let hum count humans in-radius vision-radius
-  let zomVisionRadius count zombies in-radius vision-radius
+  let hum count humans in-radius (vision-radius / 2)
+  let zomVisionRadius count zombies in-radius (vision-radius / 2)
   let zom count zombies in-radius 1
 
-
+  if(((hum / zom) < 3)) [
+    set inDanger 0
+  ]
   if(((hum / zom) >= 3)) [
-
-    if(((hum / zomVisionRadius) < 3)) [
-      set target min-one-of zombies in-radius vision-radius [distance myself]
-      ask zombies in-radius vision-radius[
-
-          face myself
-          set pcolor blue
-
-      ]
-      if(target != zombies-here)[
-        face target
-      ]
-      set pcolor orange
-    ]
-
-    if(((hum / zomVisionRadius) >= 3))[
-      if(zomVisionRadius >= 2) [
-        set target min-one-of zombies in-radius vision-radius [distance myself]
-        face target
-        set pcolor red
-      ]
-      if(zomVisionRadius = 1) [
-        set heading heading - 180
-        set pcolor green
+    set inDanger 1
+    set target min-one-of other zombies in-radius vision-radius [distance myself]
+     if(((hum / zomVisionRadius) < 3)) [
+    ;Den här koden låter oss inte hitta ett annat target om det behövs
+    if(target != nobody)[
+      face target
+      show target
+      ask target [
+        face myself
+        ;set pcolor blue
       ]
     ]
   ]
-  set-speed
+
+      if(((hum / zomVisionRadius) >= 3))[
+        if(zomVisionRadius >= 2) [ ;Finns inte tillräckligt med zombies för att hjälpa
+          if target != nobody [ ;Tänkt att låta oss se target, men triggas inte. Vore bra för proaktivt tänkande
+            face target
+            ;set pcolor red
+          ]
+        ]
+
+        if(zomVisionRadius = 1) [ ;Finns inte någon zombie som kan hjälpa
+          set heading heading - 180
+          ;set pcolor green
+        ]
+      ]
+  ]
+
 end
 
 ;JOD
+; JSN
 to release-zombie
   let hum count humans in-radius 1
   let zom count zombies in-radius 1
@@ -479,69 +506,123 @@ end
 
 ;JOD
 to set-speed
-  if energy > 100 [
-    forward zombie-speed-max
-    set energy energy - 1
-  ]
 
-  if energy <= 100 and energy >= 0 [
-    forward speedcoefficient * ln(energy + 1) + zombie-speed-min
-    set energy energy - 1
-    if energy < 0 [
-      set energy 0
+  if (eatTimer != 0) [
+    set eatTimer eatTimer - 1
+    forward 0
+
+  ]
+  if(eatTimer = 0) [
+    if energy > 100 [
+      forward zombie-speed-max
+      set energy energy - 1
+    ]
+
+    if energy <= 100 and energy >= 0 [
+      forward speedcoefficient * ln(energy + 1) + zombie-speed-min
+      set energy energy - 1
+      if energy < 0 [
+        set energy 0
+      ]
     ]
   ]
-  ;  if energy > 59 [
-  ;    forward 0.6
-  ;    set energy energy - 0.6
-  ;  ]
-  ;  if energy <= 50 [
-  ;    forward 0.5
-  ;    set energy energy - 0.5
-  ;  ]
-  ;  if energy < 60 and energy > 40 [
-  ;    forward energy / 100
-  ;    set energy energy - (energy / 100)
-  ;  ]
-
 end
 
 ;JOD
+;JSN
 to eat-human
   ask zombies [
     let hum one-of humans-here
-    if(hum != nobody)[
-      hatch-zombies 1[
-        ask hum [die]
-        set shape "zombie"
-        set size 3
-        set energy energy-start-zombies
-      ]
-      set energy energy + zombies-energy-gain
-      if energy > 100 [
-        set energy 100
+    ask zombies-here [
+      if (eatTimer = 0) [
+        if(hum != nobody)[
+          hatch-zombies 1[
+            ask hum [die]
+            set size 3
+            set energy energy-start-zombies
+            set eatTimer 4
+            show "new zombie cant eat"
+          ]
+          set eatTimer 4
+          show "human eaten"
+          set energy energy + zombies-energy-gain
+          if energy > 100 [
+            set energy 100
+          ]
+        ]
       ]
     ]
+
   ]
 end
 
-
-
-;CVLA
-;to communicate
-;  ask zombies in-radius vision-radius with [target = [target] of myself][
-;    create-links-with other zombies-here [
-;         set color white
+;JOD
+;JSN
+;to eat-human
+;  ;måste lägga till ta de zombies med lägst energi om >3 zombies på patch
+;  ask patches[
+;    if count zombies-here < 3[
+;      ask zombies [
+;        let hum one-of humans-here
+;        if(hum != nobody)[
+;          hatch-zombies 1[
+;            ask hum [die]
+;            set shape "zombie"
+;            set size 3
+;            set energy energy-start-zombies
+;          ]
+;          set energy energy + zombies-energy-gain
+;          ;Freezes zombie for 3 ticks
+;          ask zombies-here [
+;            set eatTimer 4
+;            show eatTimer
+;          ]
+;
+;          if energy > 100 [
+;            set energy 100
+;          ]
+;        ]
 ;      ]
+;    ]
 ;  ]
 ;end
 
+;JSN
+;to group-up
+;  let zom count zombies in-radius vision-radius
+;  let unassigned zombies
+;  ask zombies [set myGroup -1]
+;  let current-group 0
+;  while[any? zombies ][
+;    ask n-of zom zombies [set myGroup current-group]
+;    set current-group current-group + 1
+;    set unassigned zombies with [myGroup = -1]
+;    show "zombies grouped"
+;  ]
+;
+;end
+;
+;;JSN
+;;JOD
+;to go-to-target
+;   set target min-one-of humans in-radius vision-radius [distance myself]
+;  ask zombies in-radius vision-radius [
+;    if myGroup != -1[
+;    face target
+;    ]
+;  ]
+;  set-speed
+;end
+
+
 ; --zombie agents main function ----------------------
 to live-zombies
-  ; <3-digit initial of programmer for each subfunction of the agent>
   move-zombies(Tactics)
+  ; <3-digit initial of programmer for each subfunction of the agent>
 end
-
+; end zombie agents main function -------------------
+; end setup zombie agents ----------------------------
+; end zombie agents procedures/reporters -------------
 ; #################################################################################################################
 ; Programmers:
 ; |---------------------------HUMANS-------------------
@@ -570,13 +651,13 @@ end
 ; #################################################################################################################
 @#$#@#$#@
 GRAPHICS-WINDOW
-210
+214
 10
-647
-448
+1075
+536
 -1
 -1
-13.0
+14.0
 1
 10
 1
@@ -586,10 +667,10 @@ GRAPHICS-WINDOW
 1
 1
 1
--16
-16
--16
-16
+-30
+30
+-18
+18
 1
 1
 1
@@ -597,9 +678,9 @@ ticks
 30.0
 
 SLIDER
-674
+1113
 27
-846
+1285
 60
 setup-age
 setup-age
@@ -627,9 +708,9 @@ NIL
 HORIZONTAL
 
 SLIDER
-674
+1113
 181
-846
+1285
 214
 reproduction-age
 reproduction-age
@@ -642,9 +723,9 @@ NIL
 HORIZONTAL
 
 SLIDER
-676
+1115
 64
-848
+1287
 97
 maximum-age
 maximum-age
@@ -680,7 +761,7 @@ initial-number-humans
 initial-number-humans
 0
 50
-11.0
+20.0
 1
 1
 NIL
@@ -693,23 +774,8 @@ SLIDER
 159
 initial-number-zombies
 initial-number-zombies
-1
-50
-3.0
-1
-1
-NIL
-HORIZONTAL
-
-SLIDER
-870
-66
-1042
-99
-zombies-energy-gain
-zombies-energy-gain
 0
-100
+50
 5.0
 1
 1
@@ -717,9 +783,24 @@ NIL
 HORIZONTAL
 
 SLIDER
-868
+1309
+66
+1481
+99
+zombies-energy-gain
+zombies-energy-gain
+0
+100
+10.0
+1
+1
+NIL
+HORIZONTAL
+
+SLIDER
+1307
 28
-1040
+1479
 61
 energy-start-zombies
 energy-start-zombies
@@ -732,9 +813,9 @@ NIL
 HORIZONTAL
 
 SWITCH
-676
+1115
 103
-787
+1226
 136
 Show-age
 Show-age
@@ -750,12 +831,12 @@ CHOOSER
 Tactics
 Tactics
 "Step2" "Step3" "Step4"
-1
+2
 
 SWITCH
-869
+1308
 101
-1004
+1443
 134
 Show-energy?
 Show-energy?
@@ -764,9 +845,9 @@ Show-energy?
 -1000
 
 PLOT
-678
+1117
 236
-1044
+1483
 441
 Population
 NIL
@@ -818,9 +899,9 @@ NIL
 0
 
 SLIDER
-674
+1113
 141
-846
+1285
 174
 maximumNrOfChildren
 maximumNrOfChildren
@@ -833,24 +914,24 @@ NIL
 HORIZONTAL
 
 SLIDER
-868
+1307
 142
-1040
+1479
 175
 zombie-speed-max
 zombie-speed-max
 0
 1
-0.6
+0.7
 0.01
 1
 NIL
 HORIZONTAL
 
 SLIDER
-866
+1305
 183
-1038
+1477
 216
 zombie-speed-min
 zombie-speed-min
@@ -888,9 +969,9 @@ NIL
 HORIZONTAL
 
 TEXTBOX
-868
+1307
 10
-1018
+1457
 28
 Zombies\n
 11
@@ -898,13 +979,30 @@ Zombies\n
 1
 
 TEXTBOX
-674
+1113
 10
-824
+1263
 28
 Humans\n
 11
 0.0
+1
+
+BUTTON
+89
+13
+164
+46
+go once
+go
+NIL
+1
+T
+OBSERVER
+NIL
+F
+NIL
+NIL
 1
 
 @#$#@#$#@
