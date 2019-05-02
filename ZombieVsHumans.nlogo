@@ -535,12 +535,12 @@ to move-zombies[State]
   ;While it sees the target it faces it and hunts it othervise it looks for a new target to hunt while moving in a random pattern to "trick" the humans.
   ;Speed is determined by energy where min speed is defined as 0.5 steps forward and max is 1.
   if State = "Step4"[
+    if not any? humans [stop]
     ask zombies [
       set target min-one-of humans in-radius vision-radius [distance myself]
       if(target != nobody and inDanger != 1) [
         face target
       ]
-
       if(target = nobody) [
         right random 45
         left random 45
@@ -577,37 +577,46 @@ to alert
   let zomVisionRadius count zombies in-radius (vision-radius / 2)
   let zom count zombies in-radius 1
 
+
   if(((hum / zom) < 3)) [
     set inDanger 0
   ]
+
   if(((hum / zom) >= 3)) [
     set inDanger 1
-    set target min-one-of other zombies in-radius vision-radius [distance myself]
-     if(((hum / zomVisionRadius) < 3)) [
-    ;Den här koden låter oss inte hitta ett annat target om det behövs
-    if(target != nobody)[
-      face target
-      ;show target
-      ask target [
-        face myself
-        ;set pcolor blue
-      ]
-    ]
-  ]
-
-      if(((hum / zomVisionRadius) >= 3))[
-        if(zomVisionRadius >= 2) [ ;Finns inte tillräckligt med zombies för att hjälpa
-          if target != nobody [ ;Tänkt att låta oss se target, men triggas inte. Vore bra för proaktivt tänkande
-            face target
-            ;set pcolor red
+    let zomToHelp self
+    let helpingZombie min-one-of other zombies in-radius vision-radius [distance myself]
+    if(((hum / zomVisionRadius) < 3)) [
+      ;Den här koden låter oss inte hitta ett annat target om det behövs
+      if(helpingZombie != nobody)[
+        face helpingZombie
+        ask helpingZombie [
+          if(target != nobody) [
+            ifelse((([distance myself] of target) < ([distance myself] of zomToHelp)) and (energy > 0))[
+              face target
+            ][
+              face zomToHelp
+            ]
+          ]
+          if(target = nobody) [
+            face myself
           ]
         ]
+      ]
+    ]
 
-        if(zomVisionRadius = 1) [ ;Finns inte någon zombie som kan hjälpa
-          set heading heading - 180
-          ;set pcolor green
+    if(((hum / zomVisionRadius) >= 3))[
+      if(zomVisionRadius >= 2) [ ;Finns inte tillräckligt med zombies för att hjälpa
+        if target != nobody [ ;Tänkt att låta oss se target, men triggas inte. Vore bra för proaktivt tänkande
+          face target
+          ;set pcolor red
         ]
       ]
+      if(zomVisionRadius = 1) [ ;Finns inte någon zombie som kan hjälpa
+        set heading heading - 180
+        ;set pcolor green
+      ]
+    ]
   ]
 
 end
@@ -624,12 +633,11 @@ end
 
 ;JOD
 to set-speed
-
   if (eatTimer != 0) [
     set eatTimer eatTimer - 1
     forward 0
-
   ]
+
   if(eatTimer = 0) [
     if energy > 100 [
       forward zombie-speed-max
@@ -655,16 +663,13 @@ to eat-human
       if (eatTimer = 0) [
         if(hum != nobody)[
           hatch-zombies 1[
-            ask hum [
-              kill-me
-            ]
+            ask hum [die]
             set size 3
             set energy energy-start-zombies
             set eatTimer 4
-            ;show "new zombie cant eat"
           ]
           set eatTimer 4
-          ;show "human eaten"
+
           set energy energy + zombies-energy-gain
           if energy > 100 [
             set energy 100
@@ -672,7 +677,6 @@ to eat-human
         ]
       ]
     ]
-
   ]
 end
 
@@ -734,7 +738,6 @@ end
 ;  set-speed
 ;end
 
-
 ; --zombie agents main function ----------------------
 to live-zombies
   move-zombies(Tactics)
@@ -761,12 +764,12 @@ end
 ; |-------|--------------------------------------------
 ; |3-digit|  Name
 ; |-------|--------------------------------------------
-; |<xyz>  | <Xaver Ymzva>
-; |       |
-; |       |
-; |       |
+; |<JOD>  | Jake O´Donnell
+; |<SÄR>  | Julian Wijkström
+; |<OEA>  | Oskar Erik Adolfsson
+; |<CVLA> | Chippen Vlahija
+; |<AAR   | Ahmed Abdulkader
 ; |----------------------------------------------------
-; -----------------------------------------------------
 
 ; #################################################################################################################
 @#$#@#$#@
@@ -821,7 +824,7 @@ ticks-per-year
 ticks-per-year
 0
 100
-50.0
+70.0
 1
 1
 NIL
@@ -851,7 +854,7 @@ maximum-age
 maximum-age
 0
 100
-25.0
+40.0
 1
 1
 NIL
