@@ -167,6 +167,7 @@ to reproduce-humans ;MNM & AKB
         set femaleP parents
         if(family(manP)(femaleP)(manID)(womanID) != 0) [
           hatch random 3 [
+            set my-group (list who -1 -1 -1)
             ifelse random 2 = 0 [set color pink] [set color blue]
             set age 0
             set size 1
@@ -908,7 +909,7 @@ initial-number-zombies
 initial-number-zombies
 0
 50
-4.0
+0.0
 1
 1
 NIL
