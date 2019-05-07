@@ -131,7 +131,6 @@ to live-humans ; AKB
   ;move-humans
   change-state
   reproduce-humans
-  hunt
 end
 ; end human agents main function --------------------
 
@@ -491,27 +490,7 @@ to get-home
 
 end
 
-to hunt
-    ask humans [
-    if count zombies in-radius vision-radius < 2 [
-  let zomb min-one-of zombies in-radius vision-radius [distance myself]
-      if zomb != nobody [
-    if count humans in-radius vision-radius >= 3 [
-        ;set color red
-        ;set size 3
-      set heading towards zomb
-      forward 1
-      if [ distance myself ] of zomb < 3[
-        ask zomb [die]
-      ]
-    ]
-    if count humans in-radius 5  <= 2 [
-        flee(zomb)
-    ]
-  ]
-    ]
-  ]
-end
+
 ; end human agents procedures/reporters -------------
 
 ; **************************
