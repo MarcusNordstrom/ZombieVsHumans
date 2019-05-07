@@ -375,6 +375,17 @@ to Wander ; MNM & DAB
   ;left random 30
   ;forward 1
 end
+;to hunt ; AKB
+;  let zomb count zombies in-radius vision-radius
+;
+;  let zomb-near min-one-of zombies in-radius vision-radius [distance myself]
+;  if zomb-near != nobody and groupSpotAvailiable(my-group) <= 1 [
+;
+;    face zomb-near
+;    forward 1
+;    release-zombie
+;  ]
+;end
 
 ;SCN & FTO
 to group-me
@@ -478,8 +489,9 @@ end
 to get-home
   let person item 0 my-group
   ifelse (who = person)[
-    rt random 90
-    lt random 90
+    hunt
+    ;rt random 90
+    ;lt random 90
     fd 1
   ][
     if(turtle person != nobody)[
@@ -489,7 +501,6 @@ to get-home
   ]
 
 end
-
 
 ; end human agents procedures/reporters -------------
 
@@ -761,7 +772,7 @@ end
 ; |3-digit|  Name
 ; |-------|--------------------------------------------
 ; | <MNM> | Marcus Nordström
-; | <AKB> | Anna Brondin
+; | <AKB> | Anna Klingberg Brondin
 ; | <AJA> | Aziz Jashari
 ; | <DHL> | Daniel Lone
 ; | <DAB> | Daniel Abella
@@ -911,7 +922,7 @@ initial-number-zombies
 initial-number-zombies
 0
 50
-0.0
+5.0
 1
 1
 NIL
