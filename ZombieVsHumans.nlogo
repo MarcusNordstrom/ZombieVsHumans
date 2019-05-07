@@ -375,17 +375,17 @@ to Wander ; MNM & DAB
   ;left random 30
   ;forward 1
 end
-;to hunt ; AKB
-;  let zomb count zombies in-radius vision-radius
-;
-;  let zomb-near min-one-of zombies in-radius vision-radius [distance myself]
-;  if zomb-near != nobody and groupSpotAvailiable(my-group) <= 1 [
-;
-;    face zomb-near
-;    forward 1
-;    release-zombie
-;  ]
-;end
+to hunt ; AKB
+  let zomb count zombies in-radius vision-radius
+
+  let zomb-near min-one-of zombies in-radius vision-radius [distance myself]
+  if zomb-near != nobody and groupSpotAvailiable(my-group) <= 1 [
+
+    face zomb-near
+    forward 1
+    release-zombie
+  ]
+end
 
 ;SCN & FTO
 to group-me
