@@ -493,7 +493,7 @@ end
 
 to hunt
     ask humans [
-    if count zombies in-radius vision-radius > 3 [
+    if count zombies in-radius vision-radius < 2 [
   let zomb min-one-of zombies in-radius vision-radius [distance myself]
       if zomb != nobody [
     if count humans in-radius vision-radius >= 3 [
