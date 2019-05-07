@@ -337,10 +337,7 @@ to Group [person] ; MNM & DAB
 ;  right random 5
 ;  left random 5
   group-me
-  if groupSpotAvailiable(my-group) != 1[  ;; Go "home"
-    get-home
-  ]
-  forward 1
+  get-home
 end
 to Flee [zomb] ; MNM & DAB
   ;run away from zombie
@@ -371,12 +368,14 @@ to Flee2 [zombs] ; MNM
   forward 1
 end
 to Wander ; MNM & DAB
-  right random 30
-  left random 30
-  forward 1
+  group-me
+  get-home
+  ;right random 30
+  ;left random 30
+  ;forward 1
 end
 
-;SCN & BJZ
+;SCN & FTO
 to group-me
   if (groupSpotAvailiable(my-group) > 0) [
     let my-g my-group
@@ -444,11 +443,13 @@ to mergeGroups[group-List1 group-List2]
     set itterator itterator - 1
     set newListIndex newListIndex + 1
   ]
+  ;let groupColor random 255
   foreach newlist[ n ->
     if n != -1[
       if( turtle n != nobody)[
         ask turtle n[
           set my-group newlist
+          ;set color groupColor
         ]
       ]
     ]
@@ -474,15 +475,16 @@ end
 ;SCN & BJZ
 ;; Group the turtles in the patch
 to get-home
-  let my-g my-group
-  let Hgroup humans with [my-group = my-g]
-  let person item 0 my-g
-  if turtle person != nobody[
-    face turtle person
-    ask turtle person[
-    rt random 100
-    lt random 100
-  ]
+  let person item 0 my-group
+  ifelse (who = person)[
+    rt random 90
+    lt random 90
+    fd 1
+  ][
+    if(turtle person != nobody)[
+      face turtle person
+    ]
+    fd 1
   ]
 
 end
@@ -761,6 +763,9 @@ end
 ; | <DHL> | Daniel Lone
 ; | <DAB> | Daniel Abella
 ; | <WAS> | Waleed Abo-Sharkh
+; | <SCN> | Sebastian Carlsson
+; | <BJZ> | Benjamin Zakrisson
+; | <FTO> | Fong To
 ; |----------------------------------------------------
 ; -----------------------------------------------------
 
@@ -903,7 +908,7 @@ initial-number-zombies
 initial-number-zombies
 0
 50
-5.0
+4.0
 1
 1
 NIL
