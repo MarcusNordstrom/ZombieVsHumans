@@ -26,7 +26,7 @@ breed [ humans human ]
 ; ************* AGENT-SPECIFIC VARIABLES *********
 turtles-own []
 zombies-own [energy target speedcoefficient eatTimer myGroup inDanger]
-humans-own [latest-birth age parents nrOfChildren HState my-group]
+humans-own [latest-birth age parents nrOfChildren HState my-group confidence]
 
 ; ***************************
 
@@ -102,6 +102,7 @@ to setup-humans ;MNM & AKB & AJA
     set age random setup-age
     set HState "Wander"
     set parents [-1 -1]
+    set confidence 50
     set my-group (list who -1 -1 -1)
     ;set size 2  ; easier to see
     setxy random-xcor random-ycor
@@ -115,6 +116,7 @@ to setup-humans ;MNM & AKB & AJA
     set latest-birth 0
     set nrOfChildren 0
     set parents [-1 -1]
+    set confidence 50
     set my-group (list who -1 -1 -1)
     ;set size 2  ; easier to see
     setxy random-xcor random-ycor
@@ -288,7 +290,6 @@ end
 to change-state ; MNM & DAB
 
   ask humans [
-
     ifelse HState = "Wander" [
 
       ; Check to see if a zombie is nearby.
@@ -333,7 +334,30 @@ to change-state ; MNM & DAB
 
 
 end
-
+to updateConfidence
+  let zombsNearby zombsInArea(who)
+  set zombsNearby count zombsNearby
+  let humsInGroup 4 - groupSpotAvailiable(my-group)
+  show (word "zombs:" zombsNearby " humans:" humsInGroup)
+  let ratio 0
+  ifelse(zombsNearby != 0) [
+    ;ratio based
+    set ratio humsInGroup / zombsNearby
+    ifelse(ratio >= 3) [
+      ;hunt
+      set confidence 100
+      show (word "confidence " 100)
+    ][
+      ;flee
+      set confidence 0
+      show (word "confidence " 0)
+    ]
+  ][
+    ;0 zombies nearby
+    set confidence (humsInGroup * 25)
+    show (word "confidence " (humsInGroup * 25))
+  ]
+end
 to Group [person] ; MNM & DAB
 ;  set heading towards person
 ;  right random 5
@@ -939,7 +963,7 @@ initial-number-zombies
 initial-number-zombies
 0
 50
-5.0
+20.0
 1
 1
 NIL
@@ -1126,7 +1150,7 @@ ticks-per-day-night
 ticks-per-day-night
 0
 100
-20.0
+60.0
 1
 1
 NIL
