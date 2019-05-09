@@ -287,47 +287,60 @@ to move-humans ;MNM
   ]
 end
 
-to change-state ; MNM & DAB
+to change-state ; MNM & DAB & SCN
 
   ask humans [
-    ifelse HState = "Wander" [
+;    ifelse HState = "Wander" [
 
       ; Check to see if a zombie is nearby.
 
-      ifelse zombInArea(who) != nobody [
-        set HState "Flee"
-        ;Flee2(zombsInArea(who))
-        Flee(zombInArea(who))
-      ] [ifelse humanInArea(who) != nobody [
-          set HState "Group"
-          Group(humanInArea(who))
-        ] [Wander]
-
+;      ifelse zombInArea(who) != nobody [
+;        set HState "Flee"
+;        ;Flee2(zombsInArea(who))
+;        Flee(zombInArea(who))
+;      ] [ifelse humanInArea(who) != nobody [
+;          set HState "Group"
+;          Group(humanInArea(who))
+;        ] [Wander]
+;
+;      ]
+;    ]
+;
+;    [ifelse HState = "Flee" [
+;      ifelse zombInArea(who) != nobody [
+;        ;Flee2(zombsInArea(who))
+;        Flee(zombInArea(who))
+;      ] [set HState "Wander"
+;        Wander]
+;
+;      ]
+;
+;      [ifelse HState = "Group"[
+;        ifelse zombInArea(who) != nobody [
+;
+;          set HState "Flee"
+;          ;Flee2(zombsInArea(who))
+;          Flee(zombInArea(who))
+;
+;        ] [ifelse humanInArea(who) != nobody [
+;            Group(humanInArea(who))
+;
+;        ][set HState "Wander" Wander]]
+;
+;      ][]]
+;    ]
+    decision
+    ifelse HState = "Flee"[
+      Flee(ZombInArea(who))
+    ][
+      ifelse HState = "Hunt"[
+        ;Här ska jagas men flyr som placeholder
+        flee(ZombInArea(who))
+      ][
+       ifelse HState = "Group"[
+          Group
+        ][]
       ]
-    ]
-
-    [ifelse HState = "Flee" [
-      ifelse zombInArea(who) != nobody [
-        ;Flee2(zombsInArea(who))
-        Flee(zombInArea(who))
-      ] [set HState "Wander"
-        Wander]
-
-      ]
-
-      [ifelse HState = "Group"[
-        ifelse zombInArea(who) != nobody [
-
-          set HState "Flee"
-          ;Flee2(zombsInArea(who))
-          Flee(zombInArea(who))
-
-        ] [ifelse humanInArea(who) != nobody [
-            Group(humanInArea(who))
-
-        ][set HState "Wander" Wander]]
-
-      ][]]
     ]
   ]
 
@@ -358,48 +371,28 @@ to updateConfidence ;MNM & DAB
     show (word "confidence " (humsInGroup * 25))
   ]
 end
-to Group [person] ; MNM & DAB
-;  set heading towards person
-;  right random 5
-;  left random 5
+to Group ; MNM & DAB
   group-me
-  get-home
 end
+;SCN & BJZ
+to change-group-state[state]
+  foreach my-group[
+    person -> if(turtle person != nobody)[
+     ask turtle person [set HState state]
+    ]
+  ]
+end
+
 to Flee [zomb] ; MNM & DAB
   ;run away from zombie
-  set heading towards zomb
+  if zomb != nobody[
+    set heading towards zomb
+  ]
   ;right 180
   right 160 + random 20
   forward 1
 end
-to Flee2 [zombs] ; MNM
-  let x 0
-  let y 0
-  let c 1
-  ;show (word "myself x " xcor " y " ycor)
-  set zombs sort-on [(- distance myself)] zombs ;- distance myself to make the furthest zombie first
-  foreach zombs [ zomb ->
-    ask zomb [
-      set x (x + ( (c / 2) * xcor))
-      set y (y + ( (c / 2) * ycor))
-      set c (c + 1)
-      ;show (word "X " x " Y " y)
-    ]
-  ]
-  set x (x / c)
-  set y (y / c)
-  ;show (word "FINAL X " x " Y " y)
-  facexy x y
-  right 180
-  forward 1
-end
-to Wander ; MNM & DAB
-  group-me
-  get-home
-  ;right random 30
-  ;left random 30
-  ;forward 1
-end
+
 to hunt ; AKB
   let zomb count zombies in-radius vision-radius
 
@@ -430,7 +423,14 @@ to group-me
       ]
     ]
   ]
+  let person item 0 my-group
+  if (who = person)[
+    rt random 90
+    lt random 90
+    fd 1
+  ]
 end
+
 ;SCN & BJZ
 to kill-me
   if item 0 my-group = who[
@@ -509,22 +509,29 @@ to-report groupSpotAvailiable[group-list]
   ]
   report emptySpots
 end
+
 ;SCN & BJZ
 ;; Group the turtles in the patch
-to get-home
+to decision
   let person item 0 my-group
   ifelse (who = person)[
-    hunt
-    ;rt random 90
-    ;lt random 90
-    fd 1
+    ;Leader choice and movement
+    if(turtle person != nobody)[
+      change-group-state("Group")
+      Leader-state
+    ]
   ][
     if(turtle person != nobody)[
       face turtle person
+      fd 1
     ]
-    fd 1
   ]
-
+end
+;SCN & BJZ
+to Leader-state
+  if zombInArea(who) != nobody[
+   change-group-state("Flee")
+  ]
 end
 ;to hunt  ;DHL
 ;  ask humans [
