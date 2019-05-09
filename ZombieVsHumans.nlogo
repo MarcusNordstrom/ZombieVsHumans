@@ -334,7 +334,7 @@ to change-state ; MNM & DAB
 
 
 end
-to updateConfidence
+to updateConfidence ;MNM & DAB
   let zombsNearby zombsInArea(who)
   set zombsNearby count zombsNearby
   let humsInGroup 4 - groupSpotAvailiable(my-group)
