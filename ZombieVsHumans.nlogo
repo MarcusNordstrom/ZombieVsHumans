@@ -298,12 +298,15 @@ to change-state ; MNM & DAB & SCN
       Flee(ZombInArea(who))
     ][
       ifelse HState = "Hunt"[
-        ;Här ska jagas men flyr som placeholder
         hunt(target)
       ][
-       ifelse HState = "Group"[
+        ifelse HState = "Group"[
           Group
-        ][]
+          ][
+          ifelse Hstate = "Breed"[
+            go-to-nearby-group
+          ][]
+        ]
       ]
     ]
   ]
@@ -337,6 +340,33 @@ to updateConfidence ;MNM & DAB
 end
 to Group ; MNM & DAB
   group-me
+end
+to go-to-nearby-group
+  if (groupSpotAvailiable(my-group) > 0) [
+    let my-g my-group
+    let notMyGroup humans with[my-group != my-G]
+    let humansNear one-of other notMyGroup in-radius vision-radius
+    let humanNear-EmptySpots 0
+    let humanNear-Group  0
+    if humansNear != nobody[
+      ask humansNear[
+        set humanNear-EmptySpots groupSpotAvailiable(my-group)
+        set humanNear-Group my-group
+      ]
+      if (4 - groupSpotAvailiable(my-group)) + (4 - humanNear-EmptySpots) <= 4 [
+        mergeGroups(my-group)(humanNear-Group)
+      ]
+    ]
+  ]
+  let person item 0 my-group
+  if (who = person and Hstate != "Flee")[
+    let my-g my-group
+    let facing one-of humans with[my-group != my-g]
+    face facing
+    rt random 90
+    lt random 90
+    fd 1
+  ]
 end
 ;SCN & BJZ
 to change-group-state[state]
@@ -493,6 +523,7 @@ to Leader-state
   let f 0
   let h 0
   let g 0
+  let b 0
   let hunter 0
   foreach my-group [
     person -> if turtle person != nobody[
@@ -505,13 +536,16 @@ to Leader-state
             set hunter who
             ][ ifelse choice = "Group"[
               set g g + 1
-            ][;more states here]
+              ][ifelse choice = "Breed"[
+                set b b + 1
+                ][;more states here
+                ]
+              ]
             ]
           ]
         ]
       ]
     ]
-  ]
   ifelse (f >= 2 and h = 0 and not hunting) [
     change-group-state("Flee")
     show (word my-group " want to flee")
@@ -520,10 +554,13 @@ to Leader-state
       set-hunting-target(zombInArea(hunter))
       show(word my-group " wants to hunt zombie " target)
       show (word "zombies near " target " " ([count zombies in-radius 2] of target ))
-      ][ ifelse g >= 2 [
-        change-group-state("Group")
+      ][ ifelse b >= 1 [
+        change-group-state("Breed")
         set hunting false
-      ][;more states here]
+        ][ ifelse g >= 2[
+          change-group-state("Group")
+        ][;more states here
+        ]
       ]
     ]
   ]
@@ -562,10 +599,15 @@ to-report player-state
     report "Hunt"
     ][ ifelse confidence = 0[
       report "Flee"
-      ][ ifelse true[
+      ][ ifelse (color = pink and nrOfChildren < maximumNrOfChildren)[
         ;this is placeholder state extension that can be built upon
-        report "Group"
-      ][]
+        report "Breed"
+      ][ ifelse true[
+          report "Group"
+        ][
+          ;more states
+        ]
+      ]
     ]
   ]
 
@@ -950,7 +992,7 @@ reproduction-age
 reproduction-age
 0
 100
-8.0
+10.0
 1
 1
 NIL
@@ -965,7 +1007,7 @@ maximum-age
 maximum-age
 0
 100
-40.0
+45.0
 1
 1
 NIL
@@ -1040,7 +1082,7 @@ energy-start-zombies
 energy-start-zombies
 0
 200
-47.0
+50.0
 1
 1
 NIL
@@ -1142,7 +1184,7 @@ maximumNrOfChildren
 maximumNrOfChildren
 0
 15
-5.0
+6.0
 1
 1
 NIL
@@ -1172,7 +1214,7 @@ zombie-speed-min
 zombie-speed-min
 0
 1
-0.24
+0.25
 0.01
 1
 NIL
