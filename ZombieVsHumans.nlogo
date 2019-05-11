@@ -364,7 +364,9 @@ to go-to-nearby-group
   if (who = person and Hstate != "Flee")[
     let my-g my-group
     let facing one-of humans with[my-group != my-g]
-    face facing
+    if facing != nobody[
+      face facing
+    ]
     rt random 90
     lt random 90
     fd 1
@@ -556,7 +558,7 @@ to Leader-state
       set-hunting-target(zombInArea(hunter))
       show(word my-group " wants to hunt zombie " target)
       show (word "zombies near " target " " ([count zombies in-radius 2] of target ))
-      ][ ifelse b >= 1 [
+      ][ ifelse( b >= 1 and not(g > 2))[
         change-group-state("Breed")
         set hunting false
         ][ ifelse g >= 2[
@@ -814,7 +816,7 @@ to eat-human
       if (eatTimer = 0) [
         if(hum != nobody)[
           hatch-zombies 1[
-            ask hum [die]
+            ask hum [kill-me]
             set size 3
             set energy energy-start-zombies
             set eatTimer eatingTime + 1
@@ -949,8 +951,8 @@ GRAPHICS-WINDOW
 30
 -18
 18
-0
-0
+1
+1
 1
 ticks
 30.0
@@ -1039,7 +1041,7 @@ initial-number-humans
 initial-number-humans
 0
 50
-50.0
+20.0
 1
 1
 NIL
@@ -1054,7 +1056,7 @@ initial-number-zombies
 initial-number-zombies
 0
 50
-50.0
+20.0
 1
 1
 NIL
