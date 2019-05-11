@@ -26,7 +26,7 @@ breed [ humans human ]
 ; ************* AGENT-SPECIFIC VARIABLES *********
 turtles-own []
 zombies-own [energy target speedcoefficient eatTimer myGroup inDanger]
-humans-own [latest-birth age parents nrOfChildren HState my-group confidence]
+humans-own [latest-birth age parents nrOfChildren HState my-group confidence hunting target]
 
 ; ***************************
 
@@ -106,9 +106,11 @@ to setup-humans ;MNM & AKB & AJA
     set my-group (list who -1 -1 -1)
     ;set size 2  ; easier to see
     setxy random-xcor random-ycor
+    set hunting false
   ]
   create-humans (initial-number-humans / 2)
   [
+    set hunting false
     set shape "person"
     set color pink
     set age random setup-age
@@ -171,6 +173,7 @@ to reproduce-humans ;MNM & AKB
         if(family(manP)(femaleP)(manID)(womanID) != 0) [
           hatch random 3 [
             set my-group (list who -1 -1 -1)
+            set hunting false
             ifelse random 2 = 0 [set color pink] [set color blue]
             set age 0
             set size 1
@@ -290,52 +293,13 @@ end
 to change-state ; MNM & DAB & SCN
 
   ask humans [
-;    ifelse HState = "Wander" [
-
-      ; Check to see if a zombie is nearby.
-
-;      ifelse zombInArea(who) != nobody [
-;        set HState "Flee"
-;        ;Flee2(zombsInArea(who))
-;        Flee(zombInArea(who))
-;      ] [ifelse humanInArea(who) != nobody [
-;          set HState "Group"
-;          Group(humanInArea(who))
-;        ] [Wander]
-;
-;      ]
-;    ]
-;
-;    [ifelse HState = "Flee" [
-;      ifelse zombInArea(who) != nobody [
-;        ;Flee2(zombsInArea(who))
-;        Flee(zombInArea(who))
-;      ] [set HState "Wander"
-;        Wander]
-;
-;      ]
-;
-;      [ifelse HState = "Group"[
-;        ifelse zombInArea(who) != nobody [
-;
-;          set HState "Flee"
-;          ;Flee2(zombsInArea(who))
-;          Flee(zombInArea(who))
-;
-;        ] [ifelse humanInArea(who) != nobody [
-;            Group(humanInArea(who))
-;
-;        ][set HState "Wander" Wander]]
-;
-;      ][]]
-;    ]
     decision
     ifelse HState = "Flee"[
       Flee(ZombInArea(who))
     ][
       ifelse HState = "Hunt"[
         ;Här ska jagas men flyr som placeholder
-        flee(ZombInArea(who))
+        hunt(target)
       ][
        ifelse HState = "Group"[
           Group
@@ -351,7 +315,7 @@ to updateConfidence ;MNM & DAB
   let zombsNearby zombsInArea(who)
   set zombsNearby count zombsNearby
   let humsInGroup 4 - groupSpotAvailiable(my-group)
-  show (word "zombs:" zombsNearby " humans:" humsInGroup)
+  ;show (word "zombs:" zombsNearby " humans:" humsInGroup)
   let ratio 0
   ifelse(zombsNearby != 0) [
     ;ratio based
@@ -359,16 +323,16 @@ to updateConfidence ;MNM & DAB
     ifelse(ratio >= 3) [
       ;hunt
       set confidence 100
-      show (word "confidence " 100)
+      ;show (word "confidence " 100)
     ][
       ;flee
       set confidence 0
-      show (word "confidence " 0)
+      ;show (word "confidence " 0)
     ]
   ][
     ;0 zombies nearby
-    set confidence (humsInGroup * 25)
-    show (word "confidence " (humsInGroup * 25))
+    set confidence (humsInGroup * 15)
+    ;show (word "confidence " (humsInGroup * 25))
   ]
 end
 to Group ; MNM & DAB
@@ -393,13 +357,9 @@ to Flee [zomb] ; MNM & DAB
   forward 1
 end
 
-to hunt ; AKB
-  let zomb count zombies in-radius vision-radius
-
-  let zomb-near min-one-of zombies in-radius vision-radius [distance myself]
-  if zomb-near != nobody and groupSpotAvailiable(my-group) <= 1 [
-
-    face zomb-near
+to hunt[hunting-target] ; AKB
+  if hunting-target != nobody [
+    face hunting-target
     forward 1
     release-zombie
   ]
@@ -410,7 +370,7 @@ to group-me
   if (groupSpotAvailiable(my-group) > 0) [
     let my-g my-group
     let notMyGroup humans with[my-group != my-G]
-    let humansNear one-of other notMyGroup in-radius 6
+    let humansNear one-of other notMyGroup in-radius (2 * vision-radius)
     let humanNear-EmptySpots 0
     let humanNear-Group  0
     if humansNear != nobody[
@@ -424,7 +384,7 @@ to group-me
     ]
   ]
   let person item 0 my-group
-  if (who = person)[
+  if (who = person and Hstate != "Flee")[
     rt random 90
     lt random 90
     fd 1
@@ -491,6 +451,7 @@ to mergeGroups[group-List1 group-List2]
       ]
     ]
   ]
+  ;show (word newList " successfull group")
 end
 ;SCN & BJZ
 to-report groupSpotAvailiable[group-list]
@@ -529,9 +490,85 @@ to decision
 end
 ;SCN & BJZ
 to Leader-state
-  if zombInArea(who) != nobody[
-   change-group-state("Flee")
+  let f 0
+  let h 0
+  let g 0
+  let hunter 0
+  foreach my-group [
+    person -> if turtle person != nobody[
+      ask turtle person [
+        let choice player-state
+        ifelse choice = "Flee"[
+          set f f + 1
+          ][ ifelse choice = "Hunt"[
+            set h h + 1
+            set hunter who
+            ][ ifelse choice = "Group"[
+              set g g + 1
+            ][;more states here]
+            ]
+          ]
+        ]
+      ]
+    ]
   ]
+  ifelse (f >= 2 and h = 0 and not hunting) [
+    change-group-state("Flee")
+    show (word my-group " want to flee")
+    ][ ifelse (h > 1 and f < 2)[
+      change-group-state("Hunt")
+      set-hunting-target(zombInArea(hunter))
+      show(word my-group " wants to hunt zombie " target)
+      show (word "zombies near " target " " ([count zombies in-radius 2] of target ))
+      ][ ifelse g >= 2 [
+        change-group-state("Group")
+        set hunting false
+      ][;more states here]
+      ]
+    ]
+  ]
+end
+;SCN & BJZ
+to end-hunt
+  foreach my-group [
+   person -> if (turtle person != nobody)[
+     ask turtle person [
+        set hunting false
+      ]
+    ]
+  ]
+end
+;SCN & BJZ
+to set-hunting-target [hunting-target]
+  foreach my-group [
+   person -> if (turtle person != nobody)[
+     ask turtle person [
+       set target hunting-target
+        set hunting true
+      ]
+    ]
+  ]
+end
+;SCN & BJZ
+to-report player-state
+  updateConfidence
+  let target-nullpointer false
+  ifelse target = 0 [
+    set target-nullpointer false
+  ][
+    set target-nullpointer (([count zombies in-radius 2] of target ) < 2 )
+]
+  ifelse( confidence = 100 and (target-nullpointer))[
+    report "Hunt"
+    ][ ifelse confidence = 0[
+      report "Flee"
+      ][ ifelse true[
+        ;this is placeholder state extension that can be built upon
+        report "Group"
+      ][]
+    ]
+  ]
+
 end
 ;to hunt  ;DHL
 ;  ask humans [
@@ -691,11 +728,14 @@ end
 ;JOD
 ; JSN
 to release-zombie
-  let hum count humans in-radius 1
-  let zom count zombies in-radius 1
-  if(((hum / zom) >= 3)) [
-    ask zombies-here [die]
+  let hum count humans in-radius 2
+  let zom count zombies in-radius 2
+  if(zom != 0)[
+    if(((hum / zom) >= 3)) [
+      ask zombies-here [die]
+    ]
   ]
+
 end
 
 ;JOD
@@ -865,8 +905,8 @@ GRAPHICS-WINDOW
 30
 -18
 18
-1
-1
+0
+0
 1
 ticks
 30.0
@@ -910,7 +950,7 @@ reproduction-age
 reproduction-age
 0
 100
-5.0
+8.0
 1
 1
 NIL
@@ -970,7 +1010,7 @@ initial-number-zombies
 initial-number-zombies
 0
 50
-20.0
+10.0
 1
 1
 NIL
@@ -1000,7 +1040,7 @@ energy-start-zombies
 energy-start-zombies
 0
 200
-80.0
+47.0
 1
 1
 NIL
@@ -1039,10 +1079,10 @@ Show-energy?
 -1000
 
 PLOT
-1087
-309
-1387
-527
+1100
+276
+1602
+617
 Population
 NIL
 NIL
@@ -1060,10 +1100,10 @@ PENS
 "pen-3" 1.0 0 -7500403 true "" "plot count humans"
 
 BUTTON
-18
-51
-81
-84
+19
+50
+82
+83
 NIL
 setup
 NIL
@@ -1132,7 +1172,7 @@ zombie-speed-min
 zombie-speed-min
 0
 1
-0.5
+0.24
 0.01
 1
 NIL
