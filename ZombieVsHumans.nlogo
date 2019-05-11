@@ -317,12 +317,14 @@ end
 to updateConfidence ;MNM & DAB
   let zombsNearby zombsInArea(who)
   set zombsNearby count zombsNearby
+  let humsNearby count humans in-radius 2
   let humsInGroup 4 - groupSpotAvailiable(my-group)
   ;show (word "zombs:" zombsNearby " humans:" humsInGroup)
   let ratio 0
   ifelse(zombsNearby != 0) [
     ;ratio based
-    set ratio humsInGroup / zombsNearby
+    ;set ratio humsInGroup / zombsNearby
+    set ratio humsNearby / zombsNearby
     ifelse(ratio >= 3) [
       ;hunt
       set confidence 100
@@ -1037,7 +1039,7 @@ initial-number-humans
 initial-number-humans
 0
 50
-20.0
+50.0
 1
 1
 NIL
@@ -1052,7 +1054,7 @@ initial-number-zombies
 initial-number-zombies
 0
 50
-10.0
+50.0
 1
 1
 NIL
