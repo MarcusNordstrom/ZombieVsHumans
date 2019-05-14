@@ -19,14 +19,16 @@ globals [age-counter timeofday]
 ; ************ BREEDS OF TURTLES *****************
 breed [ zombies zombie ]  ;
 breed [ humans human ]
+breed [ corpses corpse]
 
 
 ; ****************************
 
 ; ************* AGENT-SPECIFIC VARIABLES *********
 turtles-own []
-zombies-own [energy target speedcoefficient eatTimer myGroup inDanger]
+zombies-own [energy target speedcoefficient eatTimer myGroup inDanger dangerTimer target-X target-Y target-ID]
 humans-own [latest-birth age parents nrOfChildren HState my-group confidence hunting target]
+corpses-own[flesh]
 
 ; ***************************
 
@@ -38,7 +40,7 @@ to setup
   setup-humans
   setup-zombies
   ; set the bakground to yellow
-  ask patches [set pcolor grey]
+  ask patches [set pcolor yellow]
   reset-ticks
 end
 ; **************************
@@ -61,18 +63,67 @@ end
 
 ; ******************* COMMON FUNCTIONS PART ********
 ;Functions shared between zombies and humans
+
 to set-night-day  ;JOD & MNM
   let counter ticks mod ticks-per-day-night
   if (counter < floor((ticks-per-day-night / 2))) [
-    ;show "day"
     set timeOfDay "day"
-    ask patches with [pcolor = black] [set pcolor grey]
   ]
   if (counter > floor((ticks-per-day-night / 2))+ 1) [
-    ;show "night"
     set timeOfDay "night"
-    ask patches with [pcolor = grey] [set pcolor black]
   ]
+  visual-day-night-m
+end
+
+to visual-day-night-m ;PNO
+  ifelse (visual-day-night = true) [
+    let counter ticks mod ticks-per-day-night
+    let fractionofday counter / (ticks-per-day-night - 1)
+    ask patches with [shade-of? pcolor yellow] [
+      let absoluteposition (( max-pxcor - pxcor) / ( max-pxcor - min-pxcor))
+
+      if (0 < fractionofday and fractionofday < 0.25) [; Sunrise
+        if (absoluteposition < fractionofday * 5) [
+          set pcolor (pcolor + (4 / (ticks-per-day-night / 4)))
+        ]
+      ]
+      if (0.25 < fractionofday and fractionofday < 0.5) [; Day
+        set pcolor ((pcolor + 45) / 2)
+      ]
+      if (0.50 < fractionofday and fractionofday < 0.75) [; Sunset
+        if (absoluteposition < (fractionofday - 0.5) * 5) [
+          set pcolor (pcolor - (4 / (ticks-per-day-night / 4)))
+        ]
+      ]
+      if (0.75 < fractionofday and fractionofday < 1) [; Night
+        set pcolor ((pcolor + 41) / 2)
+      ]
+    ]
+  ] [
+    ask patches with [shade-of? pcolor yellow] [
+      set pcolor gray]
+  ]
+
+  if patch-anti-aliasing > 0 [
+    repeat patch-anti-aliasing [patch-anti-aliasing-m]
+  ]
+end
+
+to patch-anti-aliasing-m ;PNO
+  let xcoordinates max-pxcor + abs(min-pxcor)
+  let aliasing-counter min-pxcor + 1
+  repeat (xcoordinates - 2) [
+    ask patches with [pxcor = aliasing-counter] [
+      if(shade-of? yellow pcolor) [
+        let temppcolor (((sum [pcolor] of (neighbors with [shade-of? pcolor yellow])) + pcolor) / 9)
+        if (shade-of? temppcolor yellow) [
+          set pcolor temppcolor
+        ]
+      ]
+    ]
+    set aliasing-counter (aliasing-counter + 1)
+  ]
+  set aliasing-counter 0
 end
 
 to year-counter ;MNM & AKB
@@ -570,9 +621,10 @@ to Leader-state
           set pcolor yellow
         ]
         change-group-state("Breed")
-        set hunting false
+        end-hunt
         ][ ifelse g >= 2[
           change-group-state("Group")
+          end-hunt
           if (show-hums-coms) [
             show (word my-group " want to group")
             set pcolor green
@@ -652,7 +704,7 @@ end
 ; **************************
 
 ; #################################################################################################################
-; ************** ZOMBIE AGENTS PART **********
+; ************ ZOMBIE AGENTS PART ********
 ;
 ; --setup zombie agents --------------------------------
 to setup-zombies
@@ -663,6 +715,8 @@ to setup-zombies
     set energy energy-start-zombies
     set speedcoefficient (zombie-speed-max - zombie-speed-min) / ln(101)
     setxy random-xcor random-ycor
+    ;Används för jakt grupper
+    set dangerTimer maxDangerTimer ;Ser till att ingen grupp bildas vid start
   ]
 end
 
@@ -697,19 +751,21 @@ to move-zombies[State]
   ;While it sees the target it faces it and hunts it othervise it looks for a new target to hunt while moving in a random pattern to "trick" the humans.
   ;Speed is determined by energy where min speed is defined as 0.5 steps forward and max is 1.
   if State = "Step4"[
-    if not any? humans [stop]
     ask zombies [
       set target min-one-of humans in-radius vision-radius [distance myself]
       if(target != nobody and inDanger != 1) [
         face target
       ]
-      if(target = nobody) [
-        right random 45
-        left random 45
-
-        if energy < 1 [
+      if (target = nobody) [
+        let cor min-one-of corpses in-radius vision-radius [distance myself]
+        ifelse (cor != nobody and (energy + (zombies-energy-gain / 4)) < 90) [
+          face cor
           forward zombie-speed-min
+        ][
+          right random 45
+          left random 45
         ]
+        forward zombie-speed-min
 
       ]
       show-energy
@@ -717,53 +773,60 @@ to move-zombies[State]
       release-zombie
       eat-human
       set-speed
-      ;communicate
-
     ]
   ]
+
 end
 
 ;JOD
 to show-energy
   ifelse show-energy?
-      [ set label energy ]
+      [
+        carefully[set label energy][]
+        carefully[set label flesh][]
+  ]
   [ set label "" ]
 end
 
 ; OEA
 ; CVLA
 ; AAR
-;JOD
+; JOD
+; PNO
 to alert
   let hum count humans in-radius (vision-radius / 2)
-  let zomVisionRadius count zombies in-radius (vision-radius / 2)
+  let zomVisionRadius count zombies in-radius vision-radius
   let zom count zombies in-radius 1
 
-
-  if(((hum / zom) < 3)) [
+  if(((hum / zom) < 3) and dangerTimer >= maxDangerTimer) [
     set inDanger 0
   ]
 
   if(((hum / zom) >= 3)) [
     set inDanger 1
+    set dangerTimer 0
+    ;Sparar koordinat för närmaste människa
+    if(target != nobody) [
+      set target-X [xcor] of target
+      set target-Y [ycor] of target
+    ]
+
     let zomToHelp self
     let helpingZombie min-one-of other zombies in-radius vision-radius [distance myself]
-    if(((hum / zomVisionRadius) < 3)) [
-      ;Den här koden låter oss inte hitta ett annat target om det behövs
+    ;Alternativ 1, om det finns zombies att hjälpa fråga dem om hjälp, jagar den ingen hjälper den direkt, har den ett target kollar den distansen samt om din fart räcker till för att fortsätta jaga
+    if(((hum / zomVisionRadius) < 3)) [ ; går att jaga människor
+                                        ;Den här koden låter oss inte hitta ett annat target om det behövs
       if(helpingZombie != nobody)[
         face helpingZombie
         ask helpingZombie [
-          if(target != nobody) [
-            ifelse((([distance myself] of target) < ([distance myself] of zomToHelp)) and (energy > 0))[
-              face target
-              ;set pcolor blue
-            ][
-              face zomToHelp
-              ;set pcolor orange
+          ifelse(target != nobody)[
+            if((([distance target] of self) < ([distance zomToHelp] of self)))[
+            face target
+            if Show-Zombie-comms [set pcolor black]
             ]
-          ]
-          if(target = nobody) [
-            face myself
+          ][
+            face zomToHelp
+            if Show-Zombie-comms [set pcolor orange]
           ]
         ]
       ]
@@ -771,18 +834,35 @@ to alert
 
     if(((hum / zomVisionRadius) >= 3))[
       if(zomVisionRadius >= 2) [ ;Finns inte tillräckligt med zombies för att hjälpa
-        if target != nobody [ ;Tänkt att låta oss se target, men triggas inte. Vore bra för proaktivt tänkande
+        face helpingZombie
+        if target != nobody [
           face target
-          ;set pcolor brown
+          if Show-Zombie-comms [set pcolor brown]
         ]
       ]
       if(zomVisionRadius = 1) [ ;Finns inte någon zombie som kan hjälpa
         set heading heading - 180
-        ;set pcolor green
+        if Show-Zombie-comms [set pcolor green]
       ]
     ]
   ]
 
+  if((dangerTimer > 0) and (dangerTimer <= maxDangerTimer))[ ;låter Zombies jaga i grupp
+                                                             ; if Show-Zombie-comms [set pcolor cyan - 2]
+    if(count humans in-radius vision-radius = 0)[
+      if Show-Zombie-comms [set pcolor cyan - 2];ljusa
+      facexy target-X target-Y
+      ask other zombies in-radius vision-radius[
+        if(target = nobody) [
+          face myself
+          if Show-Zombie-comms [set pcolor cyan + 2];mörka
+        ]
+      ]
+    ]
+    if(target = nobody and ([xcor] of self = target-X and [ycor] of self = target-Y))[;Bryter upp gruppen om mål patch nås och det inte finns någon människa
+      set dangerTimer maxDangerTimer
+    ]
+  ]
 end
 
 ;JOD
@@ -795,29 +875,44 @@ to release-zombie
       ask zombies-here [die]
     ]
   ]
-
 end
 
 ;JOD
 to set-speed
-  if (eatTimer != 0) [
-    set eatTimer eatTimer - 1
-    forward 0
+  let speed speedcoefficient * ln(energy + 1) + zombie-speed-min
+  let cor min-one-of corpses in-radius 2 [distance myself]
+
+  if (cor != nobody) [
+    eat-corpse
   ]
 
-  if(eatTimer = 0) [
-    if energy > 100 [
-      forward zombie-speed-max
-      set energy energy - 1
-    ]
+  ifelse(inDanger = 1 and target != nobody and energy > 0) [
+    let fleeCoefficient (-(1 / 6) * ([distance target] of self) + (4 / 3))
+    set fleeCoefficient min list 1 fleeCoefficient
+    set energy energy - (fleeCoefficient / zombie-speed-max)
+    forward fleeCoefficient * speed
+  ] [
+    forward zombie-speed-min
+  ]
 
-    if energy <= 100 and energy >= 0 [
-      forward speedcoefficient * ln(energy + 1) + zombie-speed-min
-      set energy energy - 1
-      if energy < 0 [
-        set energy 0
+
+
+  ifelse(target != nobody and inDanger = 0) [
+    if(eatTimer = 0) [
+      if energy > 100 [
+        forward zombie-speed-max
+        set energy energy - (speed / zombie-speed-max)
+        if Show-Zombie-comms [set pcolor black];mörka
+      ]
+
+      if energy <= 100 and energy >= 0 [
+        forward speed
+        set energy energy - (speed / zombie-speed-max)
+        set energy max list 0 energy
       ]
     ]
+  ][
+    forward zombie-speed-min
   ]
 end
 
@@ -827,88 +922,54 @@ to eat-human
   ask zombies [
     let hum one-of humans-here
     ask zombies-here [
-      if (eatTimer = 0) [
-        if(hum != nobody)[
-          hatch-zombies 1[
-            ask hum [kill-me]
-            set size 3
-            set energy energy-start-zombies
-            set eatTimer eatingTime + 1
-          ]
-          set eatTimer eatingTime + 1
-
-          set energy energy + zombies-energy-gain
-          if energy > 100 [
-            set energy 100
-          ]
+      if(hum != nobody)[
+        hatch-corpses 1[
+          ask hum [kill-me]
+          set size 3
+          set flesh zombies-energy-gain
+          ;show flesh
         ]
       ]
     ]
   ]
 end
+; funktion för att kunna äta en corp(lik) med energi som äts upp på fyra tick.
+; PNO,SÄR,NOA,JSN
+to eat-corpse
+  ask zombies [
+    if( (energy + (zombies-energy-gain / 4)) < 90 and (energy = min ([energy] of zombies in-radius vision-radius))) [  ; om zombies har en energinivå under 90 kan den äta
 
-;JOD
-;JSN
-;to eat-human
-;  ;måste lägga till ta de zombies med lägst energi om >3 zombies på patch
-;  ask patches[
-;    if count zombies-here < 3[
-;      ask zombies [
-;        let hum one-of humans-here
-;        if(hum != nobody)[
-;          hatch-zombies 1[
-;            ask hum [die]
-;            set shape "zombie"
-;            set size 3
-;            set energy energy-start-zombies
-;          ]
-;          set energy energy + zombies-energy-gain
-;          ;Freezes zombie for 3 ticks
-;          ask zombies-here [
-;            set eatTimer 4
-;            show eatTimer
-;          ]
-;
-;          if energy > 100 [
-;            set energy 100
-;          ]
-;        ]
-;      ]
-;    ]
-;  ]
-;end
-
-;JSN
-;to group-up
-;  let zom count zombies in-radius vision-radius
-;  let unassigned zombies
-;  ask zombies [set myGroup -1]
-;  let current-group 0
-;  while[any? zombies ][
-;    ask n-of zom zombies [set myGroup current-group]
-;    set current-group current-group + 1
-;    set unassigned zombies with [myGroup = -1]
-;    show "zombies grouped"
-;  ]
-;
-;end
-;
-;;JSN
-;;JOD
-;to go-to-target
-;   set target min-one-of humans in-radius vision-radius [distance myself]
-;  ask zombies in-radius vision-radius [
-;    if myGroup != -1[
-;    face target
-;    ]
-;  ]
-;  set-speed
-;end
+      let cor one-of corpses-here
+      if(cor != nobody)[
+        ask cor [
+          if (flesh > (zombies-energy-gain / 4)) [ ; energin i corp mindre än zombiesenergi, ger den energin från corps som kan ätas fyra gånger
+            set flesh (flesh - (zombies-energy-gain / 4))
+          ]
+          if (flesh <= (zombies-energy-gain / 4)) [
+              hatch-zombies 1[
+              ask cor [die]
+                set size 3
+              set shape "zombie"
+                set energy energy-start-zombies
+            ]
+          ]
+        ]
+        set energy (energy + zombies-energy-gain / 4)
+        set energy min list 100 energy
+      ]
+    ]
+  ]
+end
 
 ; --zombie agents main function ----------------------
 to live-zombies
+  ask zombies[
+    set dangerTimer dangerTimer + 1]
   move-zombies(Tactics)
-  ; <3-digit initial of programmer for each subfunction of the agent>
+
+  ask corpses[show-energy]
+
+  ask zombies[carefully[set energy floor( energy * 10 ) / 10][]]
 end
 ; end zombie agents main function -------------------
 ; end setup zombie agents ----------------------------
@@ -1070,7 +1131,7 @@ initial-number-zombies
 initial-number-zombies
 0
 50
-20.0
+10.0
 1
 1
 NIL
@@ -1134,15 +1195,15 @@ SWITCH
 134
 Show-energy?
 Show-energy?
-0
+1
 1
 -1000
 
 PLOT
-1118
-319
-1486
-532
+1111
+355
+1479
+568
 Population
 NIL
 NIL
@@ -1322,7 +1383,7 @@ SWITCH
 252
 Show-hums-coms
 Show-hums-coms
-0
+1
 1
 -1000
 
@@ -1335,6 +1396,58 @@ Red    flee\nBlue   hunt\nYellow breed\nGreen  group
 11
 0.0
 1
+
+SLIDER
+18
+330
+190
+363
+patch-anti-aliasing
+patch-anti-aliasing
+0
+16
+8.0
+1
+1
+NIL
+HORIZONTAL
+
+SWITCH
+49
+393
+193
+426
+visual-day-night
+visual-day-night
+0
+1
+-1000
+
+SLIDER
+1307
+262
+1479
+295
+maxDangerTimer
+maxDangerTimer
+1
+20
+7.0
+1
+1
+NIL
+HORIZONTAL
+
+SWITCH
+1308
+308
+1479
+341
+Show-Zombie-comms
+Show-Zombie-comms
+1
+1
+-1000
 
 @#$#@#$#@
 ## WHAT IS IT?
