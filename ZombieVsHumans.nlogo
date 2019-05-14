@@ -55,8 +55,8 @@ to go
   ;common functions and stop-expressions
   year-counter
   set-night-day
-  if count humans > 500 [stop]
-  if count zombies > 500 [stop]
+  if count humans > 2000 [stop]
+  if count zombies > 2000 [stop]
   if not any? humans [stop]
 end
 ; **************************
@@ -174,9 +174,9 @@ to setup-humans ;MNM & AKB & AJA
     ;set size 2  ; easier to see
     setxy random-xcor random-ycor
   ]
-    ask humans with [age < 2 * reproduction-age][set size 1]
-    ask humans with [age >= 2 * reproduction-age and age < 5 * reproduction-age][set size 1.5]
-    ask humans with [age >= 5 * reproduction-age ][set size 2]
+  ask humans with [age < 2 * reproduction-age][set size 1]
+  ask humans with [age >= 2 * reproduction-age and age < 5 * reproduction-age][set size 1.5]
+  ask humans with [age >= 5 * reproduction-age ][set size 2]
 end
 ; end setup human agents ----------------------------
 
@@ -186,7 +186,7 @@ to live-humans ; AKB
   ;move-humans
   change-state
   reproduce-humans
-;  hunt
+  ;  hunt
 end
 ; end human agents main function --------------------
 
@@ -241,10 +241,10 @@ to reproduce-humans ;MNM & AKB
 end
 
 to-report family[maleP femaleP maleID femaleID] ;MNM & AKB
-;  show "MALE"
-;  show maleP
-;  show "FEMALE"
-;  show femaleP
+                                                ;  show "MALE"
+                                                ;  show maleP
+                                                ;  show "FEMALE"
+                                                ;  show femaleP
   if (item 0 maleP = -1 and item 1 maleP = -1) or (item 0 femaleP = -1 and item 1 femaleP = -1) [
     ;show "initial humans, breed"
     report 1 ;Initial humans, allowed to breed
@@ -353,7 +353,7 @@ to change-state ; MNM & DAB & SCN
       ][
         ifelse HState = "Group"[
           Group
-          ][
+        ][
           ifelse Hstate = "Breed"[
             go-to-nearby-group
           ][]
@@ -427,13 +427,13 @@ end
 to change-group-state[state]
   foreach my-group[
     person -> if(turtle person != nobody)[
-     ask turtle person [set HState state]
+      ask turtle person [set HState state]
     ]
   ]
 end
 
 to Flee [zomb] ; MNM & DAB
-  ;run away from zombie
+               ;run away from zombie
   if zomb != nobody[
     set heading towards zomb
   ]
@@ -593,14 +593,14 @@ to Leader-state
               set g g + 1
               ][ifelse choice = "Breed"[
                 set b b + 1
-                ][;more states here
-                ]
+              ][;more states here
               ]
             ]
           ]
         ]
       ]
     ]
+  ]
   ifelse (f >= 2 and h = 0 and not hunting) [
     change-group-state("Flee")
     if (show-hums-coms) [
@@ -638,8 +638,8 @@ end
 ;SCN & BJZ
 to end-hunt
   foreach my-group [
-   person -> if (turtle person != nobody)[
-     ask turtle person [
+    person -> if (turtle person != nobody)[
+      ask turtle person [
         set hunting false
       ]
     ]
@@ -648,9 +648,9 @@ end
 ;SCN & BJZ
 to set-hunting-target [hunting-target]
   foreach my-group [
-   person -> if (turtle person != nobody)[
-     ask turtle person [
-       set target hunting-target
+    person -> if (turtle person != nobody)[
+      ask turtle person [
+        set target hunting-target
         set hunting true
       ]
     ]
@@ -664,7 +664,7 @@ to-report player-state
     set target-nullpointer false
   ][
     set target-nullpointer (([count zombies in-radius 2] of target ) < 2 )
-]
+  ]
   ifelse( confidence = 100 and (target-nullpointer))[
     report "Hunt"
     ][ ifelse confidence = 0[
@@ -672,7 +672,7 @@ to-report player-state
       ][ ifelse (color = pink and nrOfChildren < maximumNrOfChildren)[
         ;this is placeholder state extension that can be built upon
         report "Breed"
-      ][ ifelse true[
+        ][ ifelse true[
           report "Group"
         ][
           ;more states
@@ -794,7 +794,7 @@ end
 ; JOD
 ; PNO
 to alert
-  let hum count humans in-radius (vision-radius / 2)
+  let hum count humans in-radius vision-radius
   let zomVisionRadius count zombies in-radius vision-radius
   let zom count zombies in-radius 1
 
@@ -819,14 +819,18 @@ to alert
       if(helpingZombie != nobody)[
         face helpingZombie
         ask helpingZombie [
-          ifelse(target != nobody)[
+          ifelse(target != 0 and target != nobody)[
             if((([distance target] of self) < ([distance zomToHelp] of self)))[
-            face target
-            if Show-Zombie-comms [set pcolor black]
+              if(target != nobody)[
+                face target
+              ]
+              if Show-Zombie-comms [set pcolor black]
             ]
           ][
-            face zomToHelp
-            if Show-Zombie-comms [set pcolor orange]
+            if([target] of zomToHelp != nobody) [
+              face [target] of zomToHelp
+              if Show-Zombie-comms [set pcolor orange]
+            ]
           ]
         ]
       ]
@@ -835,11 +839,9 @@ to alert
     if(((hum / zomVisionRadius) >= 3))[
       if(zomVisionRadius >= 2) [ ;Finns inte tillräckligt med zombies för att hjälpa
         face helpingZombie
-        if target != nobody [
-          face target
-          if Show-Zombie-comms [set pcolor brown]
-        ]
+        if Show-Zombie-comms [set pcolor brown]
       ]
+
       if(zomVisionRadius = 1) [ ;Finns inte någon zombie som kan hjälpa
         set heading heading - 180
         if Show-Zombie-comms [set pcolor green]
@@ -886,10 +888,11 @@ to set-speed
     eat-corpse
   ]
 
-  ifelse(inDanger = 1 and target != nobody and energy > 0) [
-    let fleeCoefficient (-(1 / 6) * ([distance target] of self) + (4 / 3))
+  ifelse(inDanger = 1 and target != nobody and eatTimer = 0) [
+    let fleeCoefficient (-(1 / 6) * ([distance min-one-of humans in-radius vision-radius[distance myself]] of self) + (4 / 3))
     set fleeCoefficient min list 1 fleeCoefficient
     set energy energy - (fleeCoefficient / zombie-speed-max)
+    set energy max list 0 energy
     forward fleeCoefficient * speed
   ] [
     forward zombie-speed-min
@@ -926,6 +929,7 @@ to eat-human
         hatch-corpses 1[
           ask hum [kill-me]
           set size 3
+          set shape "corpse"
           set flesh zombies-energy-gain
           ;show flesh
         ]
@@ -934,23 +938,23 @@ to eat-human
   ]
 end
 ; funktion för att kunna äta en corp(lik) med energi som äts upp på fyra tick.
-; PNO,SÄR,NOA,JSN
+; PNO,SÄR,NOA
 to eat-corpse
   ask zombies [
-    if( (energy + (zombies-energy-gain / 4)) < 90 and (energy = min ([energy] of zombies in-radius vision-radius))) [  ; om zombies har en energinivå under 90 kan den äta
+    if( (energy + (zombies-energy-gain / 4)) < 90 or (energy = min ([energy] of zombies in-radius vision-radius))) [  ; om zombies har en energinivå under 90 kan den äta
+      let cor one-of corpses in-radius 1
 
-      let cor one-of corpses-here
       if(cor != nobody)[
         ask cor [
           if (flesh > (zombies-energy-gain / 4)) [ ; energin i corp mindre än zombiesenergi, ger den energin från corps som kan ätas fyra gånger
             set flesh (flesh - (zombies-energy-gain / 4))
           ]
           if (flesh <= (zombies-energy-gain / 4)) [
-              hatch-zombies 1[
+            hatch-zombies 1[
               ask cor [die]
-                set size 3
+              set size 3
               set shape "zombie"
-                set energy energy-start-zombies
+              set energy energy-start-zombies
             ]
           ]
         ]
@@ -1041,7 +1045,7 @@ setup-age
 setup-age
 0
 100
-9.0
+55.0
 1
 1
 NIL
@@ -1071,7 +1075,7 @@ reproduction-age
 reproduction-age
 0
 100
-10.0
+5.0
 1
 1
 NIL
@@ -1086,7 +1090,7 @@ maximum-age
 maximum-age
 0
 100
-45.0
+83.0
 1
 1
 NIL
@@ -1131,7 +1135,7 @@ initial-number-zombies
 initial-number-zombies
 0
 50
-10.0
+20.0
 1
 1
 NIL
@@ -1146,7 +1150,7 @@ zombies-energy-gain
 zombies-energy-gain
 0
 100
-20.0
+50.0
 1
 1
 NIL
@@ -1161,7 +1165,7 @@ energy-start-zombies
 energy-start-zombies
 0
 200
-50.0
+100.0
 1
 1
 NIL
@@ -1195,7 +1199,7 @@ SWITCH
 134
 Show-energy?
 Show-energy?
-1
+0
 1
 -1000
 
@@ -1232,7 +1236,7 @@ NIL
 T
 OBSERVER
 NIL
-5
+1
 NIL
 NIL
 1
@@ -1249,7 +1253,7 @@ T
 T
 OBSERVER
 NIL
-G
+2
 NIL
 NIL
 0
@@ -1263,7 +1267,7 @@ maximumNrOfChildren
 maximumNrOfChildren
 0
 15
-6.0
+11.0
 1
 1
 NIL
@@ -1278,7 +1282,7 @@ zombie-speed-max
 zombie-speed-max
 0
 1
-0.75
+0.8
 0.01
 1
 NIL
@@ -1293,7 +1297,7 @@ zombie-speed-min
 zombie-speed-min
 0
 1
-0.25
+0.21
 0.01
 1
 NIL
@@ -1356,7 +1360,7 @@ NIL
 T
 OBSERVER
 NIL
-F
+3
 NIL
 NIL
 1
@@ -1432,7 +1436,7 @@ maxDangerTimer
 maxDangerTimer
 1
 20
-7.0
+1.0
 1
 1
 NIL
@@ -1552,6 +1556,19 @@ false
 0
 Circle -7500403 true true 0 0 300
 Circle -16777216 true false 30 30 240
+
+corpse
+false
+0
+Circle -7500403 true true 215 110 80
+Polygon -7500403 true true 215 105 110 120 20 90 5 105 5 135 80 150 5 165 5 195 20 210 110 180 215 195
+Rectangle -7500403 true true 206 127 221 172
+Polygon -7500403 true true 212 195 152 240 122 225 197 165
+Polygon -7500403 true true 213 106 153 61 123 76 198 136
+Rectangle -1 true false 247 128 266 135
+Rectangle -1 true false 253 122 260 141
+Rectangle -1 true false 247 165 266 172
+Rectangle -1 true false 253 158 260 177
 
 cow
 false
@@ -1793,24 +1810,36 @@ Polygon -7500403 true true 30 75 75 30 270 225 225 270
 
 zombie
 false
-3
-Circle -10899396 false false 120 45 60
-Line -7500403 false 150 105 150 210
-Line -7500403 false 150 210 105 255
-Line -7500403 false 150 210 195 255
-Line -7500403 false 150 135 105 135
-Line -7500403 false 150 135 195 180
-Rectangle -7500403 true false 135 165 150 195
-Circle -955883 true false 129 69 42
-Rectangle -10899396 true false 150 90 150 90
-Circle -10899396 true false 129 54 42
-Polygon -955883 false false 135 195 120 210 180 225 150 195 135 150 150 135 120 135 120 135 165 120 165 180 195 180 120 225 135 240 150 225 195 255
-Rectangle -14835848 true false 100 129 144 143
-Rectangle -14835848 true false 102 230 147 248
-Rectangle -14835848 true false 158 200 181 231
-Polygon -1184463 true false 152 140 155 172 158 201 147 231 102 253 133 212 150 201
-Polygon -1184463 true false 157 125 197 174 188 182 154 138 158 124
-Polygon -1184463 true false 154 226 195 264 189 270 206 274 220 248 196 247 164 216 153 220 153 227
+0
+Circle -13840069 true false 110 8 78
+Polygon -13840069 true false 105 90 120 195 90 285 105 300 135 300 150 225 165 300 195 300 210 285 180 195 195 90
+Rectangle -13840069 true false 127 79 172 94
+Polygon -13840069 true false 195 90 226 129 215 158 165 105
+Polygon -13840069 true false 105 90 60 150 75 180 135 105
+Polygon -13840069 true false 120 195 105 255 120 255 135 285 150 225 120 210 135 210 165 165
+Line -7500403 true 120 195 180 195
+Polygon -7500403 true true 120 195 105 240 105 255 120 240 120 255 135 240 135 255 150 225 165 270 165 255 180 270 180 255 195 270 200 254 180 195
+Polygon -2674135 true false 105 253 119 239 104 241 106 254
+Circle -1 true false 128 28 12
+Circle -1 true false 155 27 13
+Circle -16777216 true false 128 31 7
+Circle -16777216 true false 157 27 8
+Rectangle -1 true false 137 60 143 67
+Rectangle -1 true false 157 69 163 73
+Polygon -13840069 true false 128 110 128 120 134 125 138 110
+Polygon -2674135 true false 175 170 183 178 184 165 175 170
+Polygon -7500403 true true 106 88 84 117 91 118 106 118 91 133 102 140 108 138 111 137 121 163 136 148 136 178 151 163 151 178 166 163 166 163 182 179 190 136 191 133 202 143 204 132 216 138 213 127 224 126 196 90 114 89 107 88
+Polygon -2674135 true false 170 166 180 177 182 171 183 161 167 167
+Polygon -2674135 true false 204 127 203 144 193 135 204 129
+Polygon -13840069 true false 142 119 133 132 146 131 133 121 142 119
+Polygon -13840069 true false 169 220 166 234 174 232 162 224 169 219
+Polygon -2674135 true false 102 139 100 126 91 132 88 141
+Polygon -2674135 true false 139 71 135 77 142 77 141 71
+Rectangle -16777216 true false 132 60 171 73
+Rectangle -1 true false 158 60 165 64
+Polygon -1 true false 151 74 152 70 162 69 162 74 156 74
+Polygon -1 true false 141 61 138 60 152 59 142 65 141 62
+Polygon -955883 true false 123 19 128 2 136 6 144 1 147 7 157 2 164 10 169 5 176 18 166 18 141 19
 @#$#@#$#@
 NetLogo 6.0.4
 @#$#@#$#@
