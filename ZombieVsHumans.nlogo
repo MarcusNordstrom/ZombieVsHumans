@@ -552,17 +552,31 @@ to Leader-state
     ]
   ifelse (f >= 2 and h = 0 and not hunting) [
     change-group-state("Flee")
-    show (word my-group " want to flee")
+    if (show-hums-coms) [
+      show (word my-group " want to flee")
+      set pcolor red
+    ]
     ][ ifelse (h > 1 and f < 2)[
       change-group-state("Hunt")
       set-hunting-target(zombInArea(hunter))
-      show(word my-group " wants to hunt zombie " target)
-      show (word "zombies near " target " " ([count zombies in-radius 2] of target ))
+      if (show-hums-coms) [
+        show(word my-group " wants to hunt zombie " target)
+        show (word "zombies near " target " " ([count zombies in-radius 2] of target ))
+        set pcolor blue
+      ]
       ][ ifelse( b >= 1 and not(g > 2))[
+        if (show-hums-coms) [
+          show (word my-group " want to breed")
+          set pcolor yellow
+        ]
         change-group-state("Breed")
         set hunting false
         ][ ifelse g >= 2[
           change-group-state("Group")
+          if (show-hums-coms) [
+            show (word my-group " want to group")
+            set pcolor green
+          ]
         ][;more states here
         ]
       ]
@@ -742,10 +756,10 @@ to alert
           if(target != nobody) [
             ifelse((([distance myself] of target) < ([distance myself] of zomToHelp)) and (energy > 0))[
               face target
-              set pcolor blue
+              ;set pcolor blue
             ][
               face zomToHelp
-              set pcolor orange
+              ;set pcolor orange
             ]
           ]
           if(target = nobody) [
@@ -759,12 +773,12 @@ to alert
       if(zomVisionRadius >= 2) [ ;Finns inte tillräckligt med zombies för att hjälpa
         if target != nobody [ ;Tänkt att låta oss se target, men triggas inte. Vore bra för proaktivt tänkande
           face target
-          set pcolor brown
+          ;set pcolor brown
         ]
       ]
       if(zomVisionRadius = 1) [ ;Finns inte någon zombie som kan hjälpa
         set heading heading - 180
-        set pcolor green
+        ;set pcolor green
       ]
     ]
   ]
@@ -1127,8 +1141,8 @@ Show-energy?
 PLOT
 1100
 276
-1602
-617
+1489
+545
 Population
 NIL
 NIL
@@ -1300,6 +1314,17 @@ eatingTime
 1
 NIL
 HORIZONTAL
+
+SWITCH
+22
+331
+173
+364
+Show-hums-coms
+Show-hums-coms
+0
+1
+-1000
 
 @#$#@#$#@
 ## WHAT IS IT?
