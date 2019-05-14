@@ -56,7 +56,6 @@ to go
   if count humans > 500 [stop]
   if count zombies > 500 [stop]
   if not any? humans [stop]
-  if not any? zombies [stop]
 end
 ; **************************
 
@@ -1140,10 +1139,10 @@ Show-energy?
 -1000
 
 PLOT
-1100
-276
-1489
-545
+1118
+319
+1486
+532
 Population
 NIL
 NIL
@@ -1317,15 +1316,25 @@ NIL
 HORIZONTAL
 
 SWITCH
-22
-331
-173
-364
+1113
+219
+1264
+252
 Show-hums-coms
 Show-hums-coms
 0
 1
 -1000
+
+TEXTBOX
+1118
+259
+1195
+315
+Red    flee\nBlue   hunt\nYellow breed\nGreen  group
+11
+0.0
+1
 
 @#$#@#$#@
 ## WHAT IS IT?
