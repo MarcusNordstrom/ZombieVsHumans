@@ -423,7 +423,7 @@ to go-to-nearby-group
     fd 1
   ]
 end
-;SCN & BJZ
+;SCN & BJZ, WAS
 to change-group-state[state]
   foreach my-group[
     person -> if(turtle person != nobody)[
