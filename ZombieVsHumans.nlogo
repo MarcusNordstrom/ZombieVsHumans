@@ -144,7 +144,7 @@ end
 ; ****************** HUMAN AGENTS PART **************
 ;
 ; --setup human agents --------------------------------
-to setup-humans ;MNM & AKB & AJA
+to setup-humans ;MNM & AKB & AJA & WAS
   set age-counter 0
   create-humans (initial-number-humans / 2)
   [
