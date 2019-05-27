@@ -126,13 +126,13 @@ to patch-anti-aliasing-m ;PNO
   set aliasing-counter 0
 end
 
-to year-counter ;MNM & AKB
+to year-counter ;MNM & AKB ,DHL
   set age-counter (age-counter + 1)
   if (age-counter = ticks-per-year) [
     set age-counter 0
     ask humans [
       set age (age + 1)
-      if age >= (maximum-age + (random 5) - (random 5)) [ die ]
+      if age >= (maximum-age + (random 5) - (random 5)) [ kill-me ]
     ]
     ask humans with [size < 2] [set size (size + 0.1) ]
   ]
@@ -181,7 +181,7 @@ end
 ; end setup human agents ----------------------------
 
 ; --human agents main function ----------------------
-to live-humans ; AKB
+to live-humans ; AKB, DHL
   ask humans [ifelse show-age [set label age] [set label ""]]
   ;move-humans
   change-state
